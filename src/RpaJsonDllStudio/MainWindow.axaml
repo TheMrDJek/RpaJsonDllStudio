@@ -1,0 +1,115 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:ae="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
+        xmlns:vm="clr-namespace:RpaJsonDllStudio.ViewModels"
+        mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="600"
+        x:Class="RpaJsonDllStudio.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Title="RpaJsonDllStudio - JSON to DLL Converter for RPA"
+        Icon="/Assets/app-icon.ico"
+        MinWidth="800" MinHeight="450"
+        WindowStartupLocation="CenterScreen"
+        DragDrop.AllowDrop="True">
+
+    <Design.DataContext>
+        <vm:MainWindowViewModel />
+    </Design.DataContext>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Top Menu -->
+        <Menu Grid.Row="0">
+            <MenuItem Header="Файл">
+                <MenuItem Header="Открыть JSON..." Command="{Binding OpenJsonFileCommand}"/>
+                <MenuItem Header="Загрузить из URL..." Command="{Binding LoadFromUrlCommand}"/>
+                <MenuItem Header="Сохранить проект..." Command="{Binding SaveProjectCommand}"/>
+                <MenuItem Header="Загрузить проект..." Command="{Binding LoadProjectCommand}"/>
+                <Separator/>
+                <MenuItem Header="Выход" Command="{Binding ExitCommand}"/>
+            </MenuItem>
+            <MenuItem Header="Правка">
+                <MenuItem Header="Скопировать JSON" Command="{Binding CopyJsonCommand}"/>
+                <MenuItem Header="Вставить JSON" Command="{Binding PasteJsonCommand}"/>
+                <MenuItem Header="Скопировать C# код" Command="{Binding CopyCSharpCommand}"/>
+            </MenuItem>
+            <MenuItem Header="Компиляция">
+                <MenuItem Header="Генерировать C# код" Command="{Binding GenerateCSharpCommand}"/>
+                <MenuItem Header="Компилировать DLL" Command="{Binding CompileDllCommand}"/>
+                <MenuItem Header="Настройки компиляции..." Command="{Binding ShowSettingsCommand}"/>
+            </MenuItem>
+            <MenuItem Header="Помощь">
+                <MenuItem Header="О программе" Command="{Binding ShowAboutCommand}"/>
+            </MenuItem>
+        </Menu>
+
+        <!-- Main Content Area -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" MinWidth="200"/>
+                <ColumnDefinition Width="5"/>
+                <ColumnDefinition Width="*" MinWidth="200"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- JSON Editor Panel -->
+            <Grid Grid.Column="0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                
+                <TextBlock Grid.Row="0" Margin="5" FontWeight="Bold">JSON (перетащите файл сюда)</TextBlock>
+                
+                <Border Grid.Row="1" Margin="5" BorderBrush="LightGray" BorderThickness="1" CornerRadius="3">
+                    <ContentControl Content="{Binding JsonEditor}"/>
+                </Border>
+            </Grid>
+
+            <!-- Splitter -->
+            <GridSplitter Grid.Column="1" Background="#DDDDDD" HorizontalAlignment="Stretch"/>
+
+            <!-- C# Code Panel -->
+            <Grid Grid.Column="2">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                
+                <TextBlock Grid.Row="0" Margin="5" FontWeight="Bold">Сгенерированный C# код</TextBlock>
+                
+                <Border Grid.Row="1" Margin="5" BorderBrush="LightGray" BorderThickness="1" CornerRadius="3">
+                    <ContentControl Content="{Binding CSharpEditor}"/>
+                </Border>
+            </Grid>
+        </Grid>
+
+        <!-- Status Bar -->
+        <Grid Grid.Row="2" Background="#F0F0F0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            
+            <TextBlock Grid.Column="0" Margin="5" Text="{Binding StatusMessage}"/>
+            
+            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                <Button Margin="5" Command="{Binding GenerateCSharpCommand}">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="Генерировать код" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+                <Button Margin="5" Command="{Binding CompileDllCommand}">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="Компилировать DLL" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</Window>

@@ -1,0 +1,74 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="clr-namespace:RpaJsonDllStudio.ViewModels"
+        mc:Ignorable="d" d:DesignWidth="500" d:DesignHeight="450"
+        x:Class="RpaJsonDllStudio.Views.SettingsDialog"
+        x:DataType="vm:SettingsViewModel"
+        Title="Настройки компиляции"
+        Width="500" Height="450"
+        WindowStartupLocation="CenterOwner"
+        CanResize="False">
+
+    <Design.DataContext>
+        <vm:SettingsViewModel />
+    </Design.DataContext>
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Заголовок -->
+        <TextBlock Grid.Row="0" Text="Настройки генерации кода и компиляции" FontWeight="Bold" FontSize="16" Margin="0,0,0,15"/>
+
+        <!-- Настройки -->
+        <ScrollViewer Grid.Row="1">
+            <StackPanel Spacing="10">
+                <StackPanel>
+                    <TextBlock Text="Целевой фреймворк:" Margin="0,0,0,5"/>
+                    <ComboBox ItemsSource="{Binding TargetFrameworks}" SelectedItem="{Binding SelectedTargetFramework}" Width="200" HorizontalAlignment="Left"/>
+                </StackPanel>
+
+                <StackPanel>
+                    <TextBlock Text="Библиотека JSON:" Margin="0,0,0,5"/>
+                    <ComboBox ItemsSource="{Binding JsonLibraries}" SelectedItem="{Binding SelectedJsonLibrary}" Width="200" HorizontalAlignment="Left"/>
+                </StackPanel>
+
+                <StackPanel>
+                    <TextBlock Text="Namespace:" Margin="0,0,0,5"/>
+                    <TextBox Text="{Binding Namespace}" Width="350" HorizontalAlignment="Left"/>
+                </StackPanel>
+
+                <CheckBox Content="Использовать PascalCase для названий свойств" IsChecked="{Binding UsePascalCase}"/>
+                <CheckBox Content="Генерировать свойства (вместо полей)" IsChecked="{Binding GenerateProperties}"/>
+                <CheckBox Content="Генерировать конструктор по умолчанию" IsChecked="{Binding GenerateDefaultConstructor}"/>
+                <CheckBox Content="Генерировать аннотации JsonProperty" IsChecked="{Binding GenerateJsonPropertyAttributes}"/>
+                <CheckBox Content="Оптимизировать выходную DLL" IsChecked="{Binding OptimizeOutput}"/>
+                <CheckBox Content="Добавлять XML документацию" IsChecked="{Binding GenerateXmlDocumentation}"/>
+
+                <StackPanel Margin="0,10,0,0">
+                    <TextBlock Text="Путь для сохранения DLL:" Margin="0,0,0,5"/>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox Grid.Column="0" Text="{Binding OutputPath}" IsReadOnly="True"/>
+                        <Button Grid.Column="1" Content="Обзор..." Command="{Binding BrowseCommand}" Margin="5,0,0,0"/>
+                    </Grid>
+                </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Кнопки -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,15,0,0">
+            <Button Content="По умолчанию" Command="{Binding ResetToDefaultsCommand}" Margin="0,0,10,0"/>
+            <Button Content="Отмена" IsCancel="True" Margin="0,0,10,0"/>
+            <Button Content="Сохранить" IsDefault="True" Command="{Binding SaveCommand}"/>
+        </StackPanel>
+    </Grid>
+</Window> 
