@@ -52,13 +52,13 @@ namespace RpaJsonDllStudio.Models
         {
             return new BuildSettings
             {
-                LastDllPath = this.LastDllPath,
-                AssemblyName = this.AssemblyName,
-                References = new List<string>(this.References),
-                BaseNamespace = this.BaseNamespace,
-                UseStrongTyping = this.UseStrongTyping,
-                AddJsonAnnotations = this.AddJsonAnnotations,
-                LastSaved = this.LastSaved
+                LastDllPath = LastDllPath,
+                AssemblyName = AssemblyName,
+                References = [..References],
+                BaseNamespace = BaseNamespace,
+                UseStrongTyping = UseStrongTyping,
+                AddJsonAnnotations = AddJsonAnnotations,
+                LastSaved = LastSaved
             };
         }
     }
