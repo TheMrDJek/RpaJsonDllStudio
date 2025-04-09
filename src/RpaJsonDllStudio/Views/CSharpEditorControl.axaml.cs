@@ -11,6 +11,9 @@ namespace RpaJsonDllStudio.Views;
 public partial class CSharpEditorControl : UserControl
 {
     private TextEditor _editor;
+    
+    // Событие изменения текста
+    public event EventHandler<string>? TextChanged;
 
     public CSharpEditorControl()
     {
@@ -58,6 +61,9 @@ public partial class CSharpEditorControl : UserControl
                 // Игнорируем ошибку
             }
         }
+        
+        // Подписываемся на событие изменения текста
+        _editor.TextChanged += (s, e) => TextChanged?.Invoke(this, _editor.Text);
     }
         
     public string Text

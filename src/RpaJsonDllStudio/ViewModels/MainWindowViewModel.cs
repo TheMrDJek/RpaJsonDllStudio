@@ -9,10 +9,12 @@ using System.IO;
 using System.Net.Http;
 using System.Threading.Tasks;
 using System.Windows.Input;
+using System.Linq;
+using System.Timers;
 
 namespace RpaJsonDllStudio.ViewModels;
 
-public class MainWindowViewModel : ViewModelBase
+public class MainWindowViewModel : ViewModelBase, IDisposable
 {
     private readonly ICodeGenerationService _codeGenerationService;
     private readonly CompilationSettings _settings;
@@ -26,6 +28,8 @@ public class MainWindowViewModel : ViewModelBase
     private CSharpEditorControl? _csharpEditor;
     private bool _isJsonEmpty = true;
     private bool _isCSharpEmpty = true;
+    private List<string> _csharpErrors = new List<string>();
+    private System.Timers.Timer? _validateCSharpTimer;
 
     #region Properties
 
@@ -72,6 +76,9 @@ public class MainWindowViewModel : ViewModelBase
             {
                 // Обновляем статус пустого редактора
                 IsCSharpEmpty = string.IsNullOrWhiteSpace(value);
+                
+                // Запускаем отложенную проверку синтаксиса
+                StartDelayedValidation();
             }
         }
     }
@@ -82,7 +89,14 @@ public class MainWindowViewModel : ViewModelBase
     public bool IsCSharpEmpty
     {
         get => _isCSharpEmpty;
-        private set => SetProperty(ref _isCSharpEmpty, value);
+        private set 
+        { 
+            if (SetProperty(ref _isCSharpEmpty, value))
+            {
+                // Обновляем доступность команды компиляции
+                (CompileDllCommand as RelayCommand)?.RaiseCanExecuteChanged();
+            }
+        }
     }
 
     /// <summary>
@@ -112,6 +126,15 @@ public class MainWindowViewModel : ViewModelBase
         private set => SetProperty(ref _csharpEditor, value as CSharpEditorControl);
     }
 
+    /// <summary>
+    /// Список ошибок синтаксиса C# кода
+    /// </summary>
+    public List<string> CSharpErrors
+    {
+        get => _csharpErrors;
+        private set => SetProperty(ref _csharpErrors, value);
+    }
+
     #endregion
 
     #region Commands
@@ -137,6 +160,18 @@ public class MainWindowViewModel : ViewModelBase
         _buildSettingsService = App.GetService<IBuildSettingsService>();
         _httpClient = new HttpClient();
             
+        // Инициализируем таймер для отложенной проверки C# кода
+        _validateCSharpTimer = new System.Timers.Timer(1000); // 1 секунда задержки
+        _validateCSharpTimer.AutoReset = false;
+        _validateCSharpTimer.Elapsed += async (sender, e) => 
+        {
+            // Вызываем проверку в UI-потоке
+            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(async () =>
+            {
+                await ValidateCSharpCodeAsync();
+            });
+        };
+            
         // Инициализация команд
         OpenJsonFileCommand = new RelayCommand(_ => OpenJsonFileAsync());
         LoadFromUrlCommand = new RelayCommand(_ => LoadFromUrlAsync());
@@ -145,7 +180,10 @@ public class MainWindowViewModel : ViewModelBase
         PasteJsonCommand = new RelayCommand(_ => PasteJsonAsync());
         CopyCSharpCommand = new RelayCommand(_ => CopyCSharp());
         GenerateCSharpCommand = new RelayCommand(_ => _ = TryGenerateCSharpCodeAsync());
-        CompileDllCommand = new RelayCommand(_ => _ = CompileDllAsync());
+        CompileDllCommand = new RelayCommand(
+            _ => _ = CompileDllAsync(),
+            _ => !IsCSharpEmpty
+        );
         ShowSettingsCommand = new RelayCommand(_ => ShowSettingsAsync());
         ShowAboutCommand = new RelayCommand(_ => ShowAbout());
         
@@ -158,16 +196,50 @@ public class MainWindowViewModel : ViewModelBase
     /// </summary>
     public void HandleDroppedFiles(IEnumerable<string> fileNames)
     {
-        foreach (var fileName in fileNames)
+        if (fileNames == null || !fileNames.Any())
         {
-            // Проверяем расширение файла
-            var extension = Path.GetExtension(fileName).ToLowerInvariant();
-                
-            if (extension == ".json")
+            StatusMessage = "Ошибка: список перетащенных файлов пуст.";
+            return;
+        }
+        
+        // Создаем список поддерживаемых файлов (.json и .txt) для обработки
+        var supportedFiles = fileNames
+            .Where(f => {
+                var ext = Path.GetExtension(f).ToLowerInvariant();
+                return ext == ".json" || ext == ".txt";
+            })
+            .ToList();
+            
+        if (supportedFiles.Count == 0)
+        {
+            var extensions = string.Join(", ", fileNames.Select(f => Path.GetExtension(f).ToLowerInvariant()).Distinct());
+            StatusMessage = $"Ошибка: нет поддерживаемых файлов среди перетащенных файлов. Поддерживаются только .json и .txt. Найденные расширения: {extensions}";
+            return;
+        }
+        
+        // Берем первый поддерживаемый файл
+        var selectedFile = supportedFiles[0];
+        var fileName = Path.GetFileName(selectedFile);
+        var fileExt = Path.GetExtension(selectedFile).ToLowerInvariant();
+        
+        StatusMessage = $"Загрузка файла: {fileName}...";
+        
+        try
+        {
+            LoadJsonFromFile(selectedFile);
+            
+            if (fileExt == ".txt")
             {
-                LoadJsonFromFile(fileName);
-                break; // Загружаем только первый JSON-файл
+                StatusMessage = $"Загружен текстовый файл: {fileName}. Проверьте правильность JSON.";
             }
+            else if (supportedFiles.Count > 1)
+            {
+                StatusMessage = $"Загружен файл: {fileName}. Остальные {supportedFiles.Count - 1} файлов проигнорированы.";
+            }
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Ошибка при загрузке файла {fileName}: {ex.Message}";
         }
     }
 
@@ -178,19 +250,44 @@ public class MainWindowViewModel : ViewModelBase
     /// </summary>
     private void InitializeEditors()
     {
-        // Создаем экземпляры редакторов
-        JsonEditor = new JsonEditorControl();
-        CSharpEditor = new CSharpEditorControl();
-            
-        // Подписываемся на изменение текста в JSON редакторе
-        if (_jsonEditor != null)
+        // Создаем новые редакторы
+        JsonEditor = new JsonEditorControl()
         {
-            _jsonEditor.TextChanged += (sender, text) => 
+            Text = "",
+            Width = double.NaN,
+            Height = double.NaN
+        };
+            
+        CSharpEditor = new CSharpEditorControl()
+        {
+            Text = "",
+            Width = double.NaN,
+            Height = double.NaN
+        };
+            
+        // Привязка редакторов к контенту
+        if (JsonEditor is JsonEditorControl jsonEditor)
+        {
+            _jsonEditor = jsonEditor;
+            _jsonEditor.TextChanged += (sender, text) =>
             {
                 JsonContent = text;
             };
         }
-        
+            
+        if (CSharpEditor is CSharpEditorControl csharpEditor)
+        {
+            _csharpEditor = csharpEditor;
+            _csharpEditor.TextChanged += (sender, text) =>
+            {
+                CSharpContent = text;
+            };
+        }
+            
+        // Инициализация флагов пустых редакторов
+        IsJsonEmpty = true;
+        IsCSharpEmpty = true;
+            
         // Загружаем настройки билда
         _ = LoadBuildSettingsAsync();
     }
@@ -252,30 +349,29 @@ public class MainWindowViewModel : ViewModelBase
 
     private async Task TryGenerateCSharpCodeAsync()
     {
-        if (_jsonEditor == null) return;
-            
         try
         {
-            // Получаем текст из редактора
-            var json = _jsonEditor.Text;
-                
-            // Проверяем валидность JSON
-            if (!_codeGenerationService.IsValidJson(json))
+            if (string.IsNullOrWhiteSpace(JsonContent))
             {
-                StatusMessage = "Ошибка: Невалидный JSON";
+                StatusMessage = "Ошибка: JSON пуст. Нечего генерировать.";
+                // Очищаем C# контент если JSON пуст
+                CSharpContent = string.Empty;
                 return;
             }
                 
             StatusMessage = "Генерация C# кода...";
                 
             // Генерируем код
-            var code = await _codeGenerationService.GenerateCodeFromJsonAsync(json, _settings);
+            var code = await _codeGenerationService.GenerateCodeFromJsonAsync(JsonContent, _settings);
                 
             // Обновляем редактор C#
             if (_csharpEditor != null)
             {
                 _csharpEditor.Text = code;
                 CSharpContent = code;
+                
+                // Проверяем синтаксис сгенерированного кода
+                await ValidateCSharpCodeAsync();
             }
                 
             StatusMessage = "Код успешно сгенерирован";
@@ -478,16 +574,44 @@ public class MainWindowViewModel : ViewModelBase
                 
             StatusMessage = "Компиляция DLL...";
                 
-            // Компилируем код в DLL
-            var result = await _codeGenerationService.CompileToDllAsync(CSharpContent, _settings.OutputPath, _settings);
+            try
+            {
+                // Компилируем код в DLL
+                var result = await _codeGenerationService.CompileToDllAsync(CSharpContent, _settings.OutputPath, _settings);
                 
-            if (result != null)
-            {
-                StatusMessage = $"DLL успешно скомпилирована: {result}";
+                if (result != null)
+                {
+                    StatusMessage = $"DLL успешно скомпилирована: {result}";
+                }
+                else
+                {
+                    StatusMessage = "Ошибка компиляции DLL";
+                }
             }
-            else
+            catch (Exception ex)
             {
-                StatusMessage = "Ошибка компиляции DLL";
+                // Отображаем детальную информацию об ошибке
+                var errors = new List<string>();
+                
+                // Добавляем основное сообщение об ошибке
+                errors.Add(ex.Message);
+                
+                // Проверяем наличие вложенного исключения
+                if (ex.InnerException != null)
+                {
+                    errors.Add("Подробности:");
+                    errors.Add(ex.InnerException.Message);
+                }
+                
+                // Добавляем стек вызовов для отладки
+                if (!string.IsNullOrEmpty(ex.StackTrace))
+                {
+                    errors.Add("Стек вызовов:");
+                    errors.Add(ex.StackTrace);
+                }
+                
+                await ShowErrorsDialogAsync("Ошибка компиляции DLL", errors);
+                StatusMessage = "Ошибка компиляции DLL. Подробности в диалоговом окне.";
             }
         }
         catch (Exception ex)
@@ -564,6 +688,80 @@ public class MainWindowViewModel : ViewModelBase
         {
             StatusMessage = $"Ошибка загрузки файла: {ex.Message}";
         }
+    }
+
+    /// <summary>
+    /// Запускает отложенную проверку C# кода
+    /// </summary>
+    private void StartDelayedValidation()
+    {
+        if (_validateCSharpTimer != null)
+        {
+            // Сбрасываем и перезапускаем таймер
+            _validateCSharpTimer.Stop();
+            _validateCSharpTimer.Start();
+        }
+    }
+    
+    /// <summary>
+    /// Проверяет синтаксис C# кода
+    /// </summary>
+    private async Task ValidateCSharpCodeAsync()
+    {
+        if (string.IsNullOrWhiteSpace(CSharpContent))
+        {
+            CSharpErrors = new List<string>();
+            return;
+        }
+            
+        try
+        {
+            // Проверяем код
+            var errors = await _codeGenerationService.ValidateCSharpCodeAsync(CSharpContent, _settings);
+            CSharpErrors = errors;
+                
+            if (errors.Count > 0)
+            {
+                StatusMessage = $"Найдено {errors.Count} ошибок в C# коде";
+            }
+            else if (!string.IsNullOrWhiteSpace(CSharpContent))
+            {
+                StatusMessage = "C# код корректен";
+            }
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Ошибка проверки C# кода: {ex.Message}";
+        }
+    }
+    
+    private async Task ShowErrorsDialogAsync(string title, List<string> errors)
+    {
+        var window = App.Current?.ApplicationLifetime as Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime;
+        var mainWindow = window?.MainWindow;
+            
+        if (mainWindow == null)
+            return;
+            
+        var errorText = string.Join("\n\n", errors);
+        
+        var dialog = new ErrorDialog(title, errorText);
+        await dialog.ShowDialog(mainWindow);
+    }
+
+    /// <summary>
+    /// Освобождает ресурсы
+    /// </summary>
+    public void Dispose()
+    {
+        if (_validateCSharpTimer != null)
+        {
+            _validateCSharpTimer.Stop();
+            _validateCSharpTimer.Dispose();
+            _validateCSharpTimer = null;
+        }
+        
+        _httpClient?.Dispose();
     }
 
     #endregion

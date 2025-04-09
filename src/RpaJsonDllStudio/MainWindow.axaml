@@ -90,16 +90,17 @@
                     JSON (перетащите файл сюда)
                 </TextBlock>
                 
-                <Border Grid.Row="1" Margin="5" BorderBrush="{StaticResource EditorBorderBrush}" BorderThickness="1" CornerRadius="3">
-                    <Grid>
-                        <ContentControl Content="{Binding JsonEditor}"/>
+                <Border Grid.Row="1" Margin="5" BorderBrush="{StaticResource EditorBorderBrush}" BorderThickness="1" CornerRadius="3"
+                       DragDrop.AllowDrop="True">
+                    <Grid DragDrop.AllowDrop="True">
+                        <ContentControl Content="{Binding JsonEditor}" DragDrop.AllowDrop="True"/>
                         
                         <!-- Изображение Drag & Drop, отображается только когда редактор пуст -->
                         <Panel IsVisible="{Binding IsJsonEmpty}" HorizontalAlignment="Center" VerticalAlignment="Center">
                             <Image Classes="DropFileIcon" Source="/Assets/DropFileIcon.png" />
                             
                             <TextBlock Text="Перетащите файл JSON сюда" 
-                                       Foreground="#AAAAAA" 
+                                       Foreground="#888888" 
                                        FontSize="16" 
                                        HorizontalAlignment="Center" 
                                        VerticalAlignment="Center" 
@@ -117,13 +118,15 @@
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto" MinHeight="50" MaxHeight="300"/>
                 </Grid.RowDefinitions>
                 
                 <TextBlock Grid.Row="0" Classes="header">
                     Сгенерированный C# код
                 </TextBlock>
                 
-                <Border Grid.Row="1" Margin="5" BorderBrush="{StaticResource EditorBorderBrush}" BorderThickness="1" CornerRadius="3">
+                <Border Grid.Row="1" Margin="5,5,5,0" BorderBrush="{StaticResource EditorBorderBrush}" BorderThickness="1" CornerRadius="3">
                     <Grid>
                         <ContentControl Content="{Binding CSharpEditor}"/>
                         
@@ -145,6 +148,37 @@
                                        VerticalAlignment="Center" 
                                        Margin="0,170,0,0"/>
                         </Panel>
+                    </Grid>
+                </Border>
+                
+                <!-- Разделитель для изменения размера панели ошибок -->
+                <GridSplitter Grid.Row="2" 
+                             IsVisible="{Binding !!CSharpErrors.Count}"
+                             Background="{StaticResource SplitterBrush}" 
+                             Height="5" 
+                             HorizontalAlignment="Stretch" 
+                             VerticalAlignment="Center"
+                             Margin="5,0,5,0"/>
+                
+                <!-- Панель с ошибками -->
+                <Border Grid.Row="3" Margin="5,0,5,5" 
+                        BorderBrush="{StaticResource EditorBorderBrush}" 
+                        BorderThickness="1" 
+                        CornerRadius="3"
+                        IsVisible="{Binding !!CSharpErrors.Count}">
+                    <Grid>
+                        <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+                            <ItemsControl ItemsSource="{Binding CSharpErrors}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding}"
+                                                   Foreground="{StaticResource ErrorTextBrush}"
+                                                   Margin="5,2"
+                                                   TextWrapping="Wrap"/>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
                     </Grid>
                 </Border>
             </Grid>

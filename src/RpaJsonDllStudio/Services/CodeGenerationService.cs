@@ -9,6 +9,8 @@ using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Emit;
+using System.Runtime.Serialization;
+using System.ComponentModel;
 
 namespace RpaJsonDllStudio.Services;
 
@@ -38,10 +40,14 @@ public class CodeGenerationService : ICodeGenerationService
             // Добавляем необходимые using директивы
             sb.AppendLine("using System;");
             sb.AppendLine("using System.Collections.Generic;");
+            sb.AppendLine("using System.Runtime.Serialization;");
+            sb.AppendLine("using System.ComponentModel;");
+            sb.AppendLine("using System.Linq;");
 
             if (settings.JsonLibrary == JsonLibrary.NewtonsoftJson)
             {
                 sb.AppendLine("using Newtonsoft.Json;");
+                sb.AppendLine("using Newtonsoft.Json.Serialization;");
             }
             else if (settings.JsonLibrary == JsonLibrary.SystemTextJson)
             {
@@ -76,6 +82,16 @@ public class CodeGenerationService : ICodeGenerationService
         if (string.IsNullOrWhiteSpace(outputPath))
             throw new ArgumentException("Путь для сохранения DLL не может быть пустым", nameof(outputPath));
 
+        // Проверяем наличие SDK для выбранного фреймворка
+        if (!IsSdkAvailable(settings.TargetFramework))
+        {
+            if (settings.TargetFramework == TargetFramework.NetFramework48)
+            {
+                throw new Exception($".NET Framework 4.8 не установлен. Пожалуйста, установите его с сайта https://dotnet.microsoft.com/download/dotnet-framework");
+            }
+            // Для .NET Standard ошибки не выдаем
+        }
+
         // Выполняем компиляцию асинхронно для предотвращения блокировки UI
         return await Task.Run(() =>
         {
@@ -86,7 +102,13 @@ public class CodeGenerationService : ICodeGenerationService
                     
                 // Получаем ссылки на сборки
                 var references = GetMetadataReferences(settings);
-                    
+                
+                // Определяем параметры компиляции в зависимости от целевого фреймворка
+                var parseOptions = new CSharpParseOptions(
+                    GetCSharpLanguageVersion(settings.TargetFramework),
+                    preprocessorSymbols: new[] { "DEBUG", "TRACE" }
+                );
+                
                 // Создаем компиляцию
                 var compilation = CSharpCompilation.Create(
                     $"{settings.Namespace}.dll",
@@ -95,7 +117,12 @@ public class CodeGenerationService : ICodeGenerationService
                     new CSharpCompilationOptions(
                         OutputKind.DynamicallyLinkedLibrary,
                         optimizationLevel: settings.OptimizeOutput ? OptimizationLevel.Release : OptimizationLevel.Debug,
-                        warningLevel: 4)
+                        warningLevel: 4,
+                        // Включаем дополнительные опции для совместимости с .NET Standard/.NET Core
+                        allowUnsafe: true,
+                        platform: Platform.AnyCpu,
+                        deterministic: true
+                    )
                 );
                     
                 // Компилируем и сохраняем DLL
@@ -109,13 +136,38 @@ public class CodeGenerationService : ICodeGenerationService
                         .Where(diagnostic => 
                             diagnostic.IsWarningAsError || 
                             diagnostic.Severity == DiagnosticSeverity.Error);
+                    
+                    StringBuilder errorMessage = new StringBuilder("Ошибки компиляции:");
+                    
+                    // Проверяем наличие ошибок, связанных с отсутствием необходимых сборок
+                    bool hasMissingAssemblyErrors = failures.Any(d => 
+                        d.Id == "CS0012" || // Тип определен в сборке, на которую нет ссылки
+                        d.Id == "CS0246" || // Не удалось найти тип или пространство имен
+                        d.Id == "CS0234"    // Не удалось найти тип или пространство имен в пространстве имен
+                    );
+                    
+                    if (hasMissingAssemblyErrors)
+                    {
+                        errorMessage.AppendLine("\n\nВозможно, на компьютере не установлены необходимые компоненты.");
                         
+                        if (settings.TargetFramework == TargetFramework.NetFramework48)
+                        {
+                            errorMessage.AppendLine($"Для компиляции DLL под .NET Framework 4.8 требуется, чтобы эта версия фреймворка была установлена.");
+                            errorMessage.AppendLine("Пожалуйста, установите .NET Framework 4.8 с сайта https://dotnet.microsoft.com/download/dotnet-framework");
+                        }
+                        else
+                        {
+                            errorMessage.AppendLine($"Для компиляции DLL под {settings.GetTargetFrameworkString()} могут потребоваться дополнительные библиотеки.");
+                        }
+                    }
+                    
                     foreach (var diagnostic in failures)
                     {
+                        errorMessage.AppendLine($"\n{diagnostic.Id}: {diagnostic.GetMessage()}");
                         Console.Error.WriteLine($"{diagnostic.Id}: {diagnostic.GetMessage()}");
                     }
-                        
-                    return null;
+                    
+                    throw new Exception(errorMessage.ToString());
                 }
                     
                 // Сохраняем DLL
@@ -128,9 +180,23 @@ public class CodeGenerationService : ICodeGenerationService
             catch (Exception ex)
             {
                 Console.Error.WriteLine($"Ошибка компиляции: {ex.Message}");
-                return null;
+                throw new Exception($"Ошибка компиляции DLL: {ex.Message}", ex);
             }
         });
+    }
+
+    /// <summary>
+    /// Получает версию языка C# в зависимости от целевого фреймворка
+    /// </summary>
+    private LanguageVersion GetCSharpLanguageVersion(TargetFramework targetFramework)
+    {
+        return targetFramework switch
+        {
+            TargetFramework.NetStandard20 => LanguageVersion.CSharp7_3,
+            TargetFramework.NetStandard21 => LanguageVersion.CSharp8,
+            TargetFramework.NetFramework48 => LanguageVersion.CSharp8,
+            _ => LanguageVersion.CSharp7_3
+        };
     }
 
     /// <summary>
@@ -150,6 +216,74 @@ public class CodeGenerationService : ICodeGenerationService
         {
             return false;
         }
+    }
+
+    /// <summary>
+    /// Проверяет валидность C# кода
+    /// </summary>
+    public async Task<List<string>> ValidateCSharpCodeAsync(string csharpCode, CompilationSettings settings)
+    {
+        if (string.IsNullOrWhiteSpace(csharpCode))
+            return new List<string> { "C# код не может быть пустым" };
+
+        // Выполняем проверку асинхронно для предотвращения блокировки UI
+        return await Task.Run(() =>
+        {
+            try
+            {
+                var errors = new List<string>();
+                
+                // Создаем синтаксическое дерево из кода
+                var syntaxTree = CSharpSyntaxTree.ParseText(csharpCode);
+                
+                // Получаем ссылки на сборки
+                var references = GetMetadataReferences(settings);
+                
+                // Определяем параметры компиляции
+                var parseOptions = new CSharpParseOptions(
+                    GetCSharpLanguageVersion(settings.TargetFramework),
+                    preprocessorSymbols: new[] { "DEBUG", "TRACE" }
+                );
+                
+                // Создаем компиляцию
+                var compilation = CSharpCompilation.Create(
+                    $"{settings.Namespace}.dll",
+                    new[] { syntaxTree },
+                    references,
+                    new CSharpCompilationOptions(
+                        OutputKind.DynamicallyLinkedLibrary,
+                        optimizationLevel: settings.OptimizeOutput ? OptimizationLevel.Release : OptimizationLevel.Debug,
+                        warningLevel: 4,
+                        // Включаем дополнительные опции для совместимости с .NET Standard/.NET Core
+                        allowUnsafe: true,
+                        platform: Platform.AnyCpu,
+                        deterministic: true
+                    )
+                );
+                
+                // Получаем диагностику (ошибки и предупреждения)
+                var diagnostics = compilation.GetDiagnostics();
+                
+                // Фильтруем только ошибки и предупреждения, которые обрабатываются как ошибки
+                var failures = diagnostics.Where(diagnostic => 
+                    diagnostic.IsWarningAsError || 
+                    diagnostic.Severity == DiagnosticSeverity.Error);
+                
+                if (failures.Any())
+                {
+                    foreach (var diagnostic in failures)
+                    {
+                        errors.Add($"[{diagnostic.Id}] {diagnostic.GetMessage()} (Строка {diagnostic.Location.GetLineSpan().StartLinePosition.Line + 1})");
+                    }
+                }
+                
+                return errors;
+            }
+            catch (Exception ex)
+            {
+                return new List<string> { $"Ошибка проверки кода: {ex.Message}" };
+            }
+        });
     }
 
     #region Private Methods
@@ -298,6 +432,39 @@ public class CodeGenerationService : ICodeGenerationService
         references.Add(MetadataReference.CreateFromFile(typeof(Console).Assembly.Location));
         references.Add(MetadataReference.CreateFromFile(typeof(System.Runtime.AssemblyTargetedPatchBandAttribute).Assembly.Location));
         references.Add(MetadataReference.CreateFromFile(typeof(System.Collections.IEnumerable).Assembly.Location));
+        
+        // Добавляем System.Runtime.dll - необходима для Attribute и других базовых типов
+        var runtimeAssembly = AppDomain.CurrentDomain.GetAssemblies()
+            .FirstOrDefault(a => a.GetName().Name == "System.Runtime");
+        if (runtimeAssembly != null)
+        {
+            references.Add(MetadataReference.CreateFromFile(runtimeAssembly.Location));
+        }
+        
+        // Добавляем ссылку на MSCorLib
+        string mscorlibLocation = typeof(object).Assembly.Location;
+        string runtimeDirectory = Path.GetDirectoryName(mscorlibLocation);
+        
+        if (!string.IsNullOrEmpty(runtimeDirectory))
+        {
+            // Добавляем ссылки на другие базовые библиотеки .NET
+            string[] frameworkAssemblies = {
+                "System.Runtime.dll",
+                "System.Private.CoreLib.dll",
+                "System.ObjectModel.dll",
+                "System.Linq.dll",
+                "System.Collections.dll"
+            };
+            
+            foreach (var assembly in frameworkAssemblies)
+            {
+                string assemblyPath = Path.Combine(runtimeDirectory, assembly);
+                if (File.Exists(assemblyPath))
+                {
+                    references.Add(MetadataReference.CreateFromFile(assemblyPath));
+                }
+            }
+        }
             
         // Сборки для библиотек JSON
         if (settings.JsonLibrary == JsonLibrary.NewtonsoftJson)
@@ -324,6 +491,31 @@ public class CodeGenerationService : ICodeGenerationService
         }
             
         return references;
+    }
+
+    /// <summary>
+    /// Проверяет наличие SDK для выбранного фреймворка
+    /// </summary>
+    private bool IsSdkAvailable(TargetFramework targetFramework)
+    {
+        try
+        {
+            // Проверка только для .NET Framework
+            if (targetFramework == TargetFramework.NetFramework48)
+            {
+                // Проверяем наличие сборок .NET Framework 4.8
+                string netfxPath = @"C:\Windows\Microsoft.NET\Framework\v4.0.30319";
+                return Directory.Exists(netfxPath);
+            }
+            
+            // Для .NET Standard проверку не выполняем
+            return true;
+        }
+        catch
+        {
+            // В случае ошибки предполагаем, что SDK не установлен
+            return false;
+        }
     }
 
     #endregion

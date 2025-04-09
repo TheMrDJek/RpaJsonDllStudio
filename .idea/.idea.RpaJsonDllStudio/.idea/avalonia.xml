@@ -12,6 +12,7 @@
         <entry key="src/RpaJsonDllStudio/Assets/ThemeResources.axaml" value="src/RpaJsonDllStudio/RpaJsonDllStudio.csproj" />
         <entry key="src/RpaJsonDllStudio/MainWindow.axaml" value="src/RpaJsonDllStudio/RpaJsonDllStudio.csproj" />
         <entry key="src/RpaJsonDllStudio/Views/CSharpEditorControl.axaml" value="src/RpaJsonDllStudio/RpaJsonDllStudio.csproj" />
+        <entry key="src/RpaJsonDllStudio/Views/ErrorDialog.axaml" value="src/RpaJsonDllStudio/RpaJsonDllStudio.csproj" />
         <entry key="src/RpaJsonDllStudio/Views/InputDialog.axaml" value="src/RpaJsonDllStudio/RpaJsonDllStudio.csproj" />
         <entry key="src/RpaJsonDllStudio/Views/JsonEditorControl.axaml" value="src/RpaJsonDllStudio/RpaJsonDllStudio.csproj" />
         <entry key="src/RpaJsonDllStudio/Views/SettingsDialog.axaml" value="src/RpaJsonDllStudio/RpaJsonDllStudio.csproj" />

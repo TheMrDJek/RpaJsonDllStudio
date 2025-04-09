@@ -40,6 +40,7 @@
     <SolidColorBrush x:Key="EditorBorderBrush" Color="#D0D7DE" />
     <SolidColorBrush x:Key="SplitterBrush" Color="#E5E5E5" />
     <SolidColorBrush x:Key="HeadingForegroundBrush" Color="#24292F" />
+    <SolidColorBrush x:Key="ErrorTextBrush" Color="#CF222E" />
     
     <!-- Цвета VS Code -->
     <Color x:Key="VsCodeBackgroundColor">#FFFFFF</Color>

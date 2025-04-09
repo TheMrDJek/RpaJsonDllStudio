@@ -11,7 +11,7 @@ public class CompilationSettings
     /// <summary>
     /// Целевой фреймворк компиляции
     /// </summary>
-    public TargetFramework TargetFramework { get; set; } = TargetFramework.NetStandard20;
+    public TargetFramework TargetFramework { get; set; } = TargetFramework.NetStandard21;
         
     /// <summary>
     /// Используемая библиотека JSON
@@ -73,10 +73,6 @@ public class CompilationSettings
             TargetFramework.NetStandard20 => "netstandard2.0",
             TargetFramework.NetStandard21 => "netstandard2.1",
             TargetFramework.NetFramework48 => "net48",
-            TargetFramework.Net60 => "net6.0",
-            TargetFramework.Net70 => "net7.0",
-            TargetFramework.Net80 => "net8.0",
-            TargetFramework.Net90 => "net9.0",
             _ => throw new ArgumentOutOfRangeException()
         };
     }

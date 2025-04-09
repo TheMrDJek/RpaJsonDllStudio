@@ -37,11 +37,7 @@ public class SettingsViewModel : ViewModelBase
         {
             "netstandard2.0",
             "netstandard2.1",
-            "net48",
-            "net6.0",
-            "net7.0",
-            "net8.0",
-            "net9.0"
+            "net48"
         };
 
         _jsonLibraries = new List<string>
@@ -51,7 +47,7 @@ public class SettingsViewModel : ViewModelBase
         };
 
         // Установка значений по умолчанию
-        _selectedTargetFramework = _targetFrameworks[0]; // netstandard2.0
+        _selectedTargetFramework = _targetFrameworks[1]; // netstandard2.1
         _selectedJsonLibrary = _jsonLibraries[0]; // Newtonsoft.Json
         _namespace = "RpaJsonModels";
         _rootClassName = "Root";
@@ -180,10 +176,6 @@ public class SettingsViewModel : ViewModelBase
             "netstandard2.0" => TargetFramework.NetStandard20,
             "netstandard2.1" => TargetFramework.NetStandard21,
             "net48" => TargetFramework.NetFramework48,
-            "net6.0" => TargetFramework.Net60,
-            "net7.0" => TargetFramework.Net70,
-            "net8.0" => TargetFramework.Net80,
-            "net9.0" => TargetFramework.Net90,
             _ => TargetFramework.NetStandard20
         };
     }
@@ -197,7 +189,7 @@ public class SettingsViewModel : ViewModelBase
     private void ResetToDefaults()
     {
         // Сбрасываем настройки на значения по умолчанию
-        SelectedTargetFramework = _targetFrameworks[0]; // netstandard2.0
+        SelectedTargetFramework = _targetFrameworks[1]; // netstandard2.1
         SelectedJsonLibrary = _jsonLibraries[0]; // Newtonsoft.Json
         Namespace = "RpaJsonModels";
         RootClassName = "Root";
