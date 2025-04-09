@@ -1,6 +1,5 @@
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
-using Avalonia.Data.Core;
 using Avalonia.Data.Core.Plugins;
 using Avalonia.Markup.Xaml;
 using Microsoft.Extensions.DependencyInjection;
@@ -11,7 +10,7 @@ using System.Linq;
 
 namespace RpaJsonDllStudio;
 
-public partial class App : Application
+public class App : Application
 {
     private IServiceProvider? _serviceProvider;
 
@@ -59,6 +58,7 @@ public partial class App : Application
         // Регистрируем сервисы
         services.AddSingleton<ICodeGenerationService, CodeGenerationService>();
         services.AddSingleton<CompilationSettings>();
+        services.AddSingleton<IBuildSettingsService, BuildSettingsService>();
         
         _serviceProvider = services.BuildServiceProvider();
     }

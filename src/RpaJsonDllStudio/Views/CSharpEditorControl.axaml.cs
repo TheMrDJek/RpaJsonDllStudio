@@ -1,44 +1,72 @@
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Markup.Xaml;
 using AvaloniaEdit;
 using AvaloniaEdit.Highlighting;
+using AvaloniaEdit.Highlighting.Xshd;
 using System;
-using System.IO;
-using System.Reflection;
+using System.Xml;
 
-namespace RpaJsonDllStudio.Views
+namespace RpaJsonDllStudio.Views;
+
+public partial class CSharpEditorControl : UserControl
 {
-    public partial class CSharpEditorControl : UserControl
-    {
-        private TextEditor _editor;
+    private TextEditor _editor;
 
-        public CSharpEditorControl()
+    public CSharpEditorControl()
+    {
+        InitializeComponent();
+            
+        _editor = this.FindControl<TextEditor>("Editor");
+            
+        try
         {
-            InitializeComponent();
-            
-            _editor = this.Find<TextEditor>("Editor");
-            
-            try
+            // Загружаем пользовательскую схему подсветки
+            using var stream = typeof(CSharpEditorControl).Assembly
+                .GetManifestResourceStream("RpaJsonDllStudio.Assets.CSharpSyntaxHighlighting.xshd");
+                
+            if (stream != null)
             {
-                // Для Avalonia.AvaloniaEdit используем встроенную подсветку синтаксиса
+                using var reader = new XmlTextReader(stream);
+                _editor.SyntaxHighlighting = HighlightingLoader.Load(reader, HighlightingManager.Instance);
+            }
+            else
+            {
+                // Если не удалось загрузить пользовательскую схему, используем встроенную
                 var csharpSyntax = HighlightingManager.Instance.GetDefinitionByExtension(".cs");
                 if (csharpSyntax != null)
                 {
                     _editor.SyntaxHighlighting = csharpSyntax;
                 }
             }
-            catch (Exception ex)
+        }
+        catch (Exception ex)
+        {
+            // В случае ошибки просто продолжаем без подсветки синтаксиса
+            Console.WriteLine($"Ошибка при загрузке подсветки синтаксиса: {ex.Message}");
+            
+            try
             {
-                // В случае ошибки просто продолжаем без подсветки синтаксиса
-                Console.WriteLine($"Ошибка при загрузке подсветки синтаксиса: {ex.Message}");
+                // Пробуем загрузить стандартную подсветку
+                var csharpSyntax = HighlightingManager.Instance.GetDefinitionByExtension(".cs");
+                if (csharpSyntax != null)
+                {
+                    _editor.SyntaxHighlighting = csharpSyntax;
+                }
+            }
+            catch
+            {
+                // Игнорируем ошибку
             }
         }
+    }
         
-        public string Text
+    public string Text
+    {
+        get => _editor?.Text ?? string.Empty;
+        set 
         {
-            get => _editor.Text;
-            set => _editor.Text = value;
+            if (_editor != null)
+                _editor.Text = value;
         }
     }
-} 
+}

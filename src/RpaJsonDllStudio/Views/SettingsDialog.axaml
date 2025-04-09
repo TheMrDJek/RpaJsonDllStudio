@@ -42,6 +42,11 @@
                     <TextBlock Text="Namespace:" Margin="0,0,0,5"/>
                     <TextBox Text="{Binding Namespace}" Width="350" HorizontalAlignment="Left"/>
                 </StackPanel>
+                
+                <StackPanel>
+                    <TextBlock Text="Имя корневого класса:" Margin="0,0,0,5"/>
+                    <TextBox Text="{Binding RootClassName}" Width="350" HorizontalAlignment="Left"/>
+                </StackPanel>
 
                 <CheckBox Content="Использовать PascalCase для названий свойств" IsChecked="{Binding UsePascalCase}"/>
                 <CheckBox Content="Генерировать свойства (вместо полей)" IsChecked="{Binding GenerateProperties}"/>
