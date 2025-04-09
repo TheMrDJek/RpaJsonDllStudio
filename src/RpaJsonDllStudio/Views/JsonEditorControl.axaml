@@ -4,8 +4,10 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:avalonia="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
-             x:Class="RpaJsonDllStudio.Views.JsonEditorControl">
-  <Grid>
+             x:Class="RpaJsonDllStudio.Views.JsonEditorControl"
+             DragDrop.AllowDrop="True">
+  <Grid Background="Transparent">
+    <!-- TextEditor основной элемент -->
     <avalonia:TextEditor Name="Editor"
                         FontFamily="{DynamicResource CodeEditorFontFamily}"
                         FontSize="14"
@@ -20,5 +22,14 @@
         </Style>
       </avalonia:TextEditor.Styles>
     </avalonia:TextEditor>
+    
+    <!-- Панель для перехвата DragDrop событий -->
+    <Border x:Name="DragDropArea" 
+            Background="Transparent" 
+            DragDrop.AllowDrop="True"
+            IsVisible="True"
+            IsHitTestVisible="False">
+      <!-- Делаем прозрачным для событий мыши, но видимым для DragDrop -->
+    </Border>
   </Grid>
 </UserControl> 

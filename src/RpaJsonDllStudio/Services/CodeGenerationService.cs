@@ -325,7 +325,16 @@ public class CodeGenerationService : ICodeGenerationService
                 string propertyName = property.Name;
                 if (settings.UsePascalCase)
                 {
-                    propertyName = char.ToUpper(propertyName[0]) + propertyName.Substring(1);
+                    // Проверка на пустое имя свойства перед преобразованием в PascalCase
+                    if (!string.IsNullOrEmpty(propertyName))
+                    {
+                        propertyName = char.ToUpper(propertyName[0]) + propertyName.Substring(1);
+                    }
+                    else
+                    {
+                        // Для пустых имен используем безопасное имя свойства
+                        propertyName = "EmptyProperty";
+                    }
                 }
                     
                 var propertyValue = property.Value;
@@ -334,13 +343,15 @@ public class CodeGenerationService : ICodeGenerationService
                 // Добавляем атрибут JsonProperty, если нужно
                 if (settings.GenerateJsonPropertyAttributes)
                 {
+                    string originalPropertyName = string.IsNullOrEmpty(property.Name) ? "EmptyProperty" : property.Name;
+                    
                     if (settings.JsonLibrary == JsonLibrary.NewtonsoftJson)
                     {
-                        sb.AppendLine($"{indent}    [JsonProperty(\"{property.Name}\")]");
+                        sb.AppendLine($"{indent}    [JsonProperty(\"{originalPropertyName}\")]");
                     }
                     else if (settings.JsonLibrary == JsonLibrary.SystemTextJson)
                     {
-                        sb.AppendLine($"{indent}    [JsonPropertyName(\"{property.Name}\")]");
+                        sb.AppendLine($"{indent}    [JsonPropertyName(\"{originalPropertyName}\")]");
                     }
                 }
                     

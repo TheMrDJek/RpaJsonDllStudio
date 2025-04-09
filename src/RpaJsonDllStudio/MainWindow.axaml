@@ -90,13 +90,22 @@
                     JSON (перетащите файл сюда)
                 </TextBlock>
                 
-                <Border Grid.Row="1" Margin="5" BorderBrush="{StaticResource EditorBorderBrush}" BorderThickness="1" CornerRadius="3"
+                <!-- Контейнер для редактора JSON с явной поддержкой DragDrop -->
+                <Border Grid.Row="1" Margin="5" 
+                       BorderBrush="{StaticResource EditorBorderBrush}" 
+                       BorderThickness="1" 
+                       CornerRadius="3"
                        DragDrop.AllowDrop="True">
-                    <Grid DragDrop.AllowDrop="True">
-                        <ContentControl Content="{Binding JsonEditor}" DragDrop.AllowDrop="True"/>
+                    <!-- Простой контейнер для редактора -->
+                    <Panel>
+                        <!-- JSON редактор -->
+                        <ContentControl Content="{Binding JsonEditor}"/>
                         
                         <!-- Изображение Drag & Drop, отображается только когда редактор пуст -->
-                        <Panel IsVisible="{Binding IsJsonEmpty}" HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <Panel IsVisible="{Binding IsJsonEmpty}" 
+                               HorizontalAlignment="Center" 
+                               VerticalAlignment="Center"
+                               IsHitTestVisible="False">
                             <Image Classes="DropFileIcon" Source="/Assets/DropFileIcon.png" />
                             
                             <TextBlock Text="Перетащите файл JSON сюда" 
@@ -106,7 +115,7 @@
                                        VerticalAlignment="Center" 
                                        Margin="0,140,0,0"/>
                         </Panel>
-                    </Grid>
+                    </Panel>
                 </Border>
             </Grid>
 

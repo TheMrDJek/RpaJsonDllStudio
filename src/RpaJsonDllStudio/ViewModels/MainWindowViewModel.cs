@@ -485,34 +485,30 @@ public class MainWindowViewModel : ViewModelBase, IDisposable
 
     private void CopyJson()
     {
-        if (!string.IsNullOrEmpty(JsonContent))
+        if (!string.IsNullOrEmpty(JsonContent) && _jsonEditor != null)
         {
-            // TODO: Реализовать копирование в буфер обмена
+            _jsonEditor.CopyToClipboard();
             StatusMessage = "JSON скопирован в буфер обмена";
         }
     }
 
     private async void PasteJsonAsync()
     {
-        // TODO: Реализовать вставку из буфера обмена
         StatusMessage = "Вставка JSON из буфера обмена...";
-            
-        // Временная реализация - просто очищаем текущий JSON
-        JsonContent = "";
             
         if (_jsonEditor != null)
         {
-            _jsonEditor.Text = "";
+            _jsonEditor.PasteFromClipboard();
+            // JsonContent будет обновлен через событие TextChanged
+            StatusMessage = "JSON вставлен из буфера обмена";
         }
-            
-        StatusMessage = "JSON вставлен из буфера обмена";
     }
 
     private void CopyCSharp()
     {
-        if (!string.IsNullOrEmpty(CSharpContent))
+        if (!string.IsNullOrEmpty(CSharpContent) && _csharpEditor != null)
         {
-            // TODO: Реализовать копирование в буфер обмена
+            _csharpEditor.CopyToClipboard();
             StatusMessage = "C# код скопирован в буфер обмена";
         }
     }
