@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using System.Windows.Input;
 using System.Linq;
 using System.Timers;
+using Serilog;
 
 namespace RpaJsonDllStudio.ViewModels;
 
@@ -219,7 +220,33 @@ public class MainWindowViewModel : ViewModelBase, IDisposable
             _jsonEditor = jsonEditor;
             _jsonEditor.TextChanged += (sender, text) =>
             {
-                JsonContent = text;
+                // Очищаем HTML-сущности при изменении текста
+                if (!string.IsNullOrEmpty(text))
+                {
+                    var cleanedText = CleanJsonFromHtmlEntities(text);
+                    // Проверяем, были ли изменения после очистки
+                    if (cleanedText != text)
+                    {
+                        // Если текст был изменен при очистке, обновим содержимое без вызова рекурсии
+                        JsonContent = cleanedText;
+                        
+                        // Обновляем текст в редакторе только если он отличается от очищенного
+                        // Это может вызвать повторное срабатывание TextChanged, но с уже очищенным текстом
+                        if (_jsonEditor.Text != cleanedText)
+                        {
+                            _jsonEditor.Text = cleanedText;
+                        }
+                    }
+                    else
+                    {
+                        // Если изменений нет, просто обновляем JsonContent
+                        JsonContent = text;
+                    }
+                }
+                else
+                {
+                    JsonContent = text;
+                }
             };
         }
             
@@ -372,6 +399,10 @@ public class MainWindowViewModel : ViewModelBase, IDisposable
                     using var stream = await file.OpenReadAsync();
                     using var reader = new StreamReader(stream);
                     var json = await reader.ReadToEndAsync();
+                    
+                    // Очищаем JSON от HTML-сущностей
+                    json = CleanJsonFromHtmlEntities(json);
+                    
                     JsonContent = json;
                         
                     if (_jsonEditor != null)
@@ -379,7 +410,7 @@ public class MainWindowViewModel : ViewModelBase, IDisposable
                         _jsonEditor.Text = json;
                     }
                         
-                    StatusMessage = $"Файл загружен: {file.Name}";
+                    StatusMessage = $"Файл загружен: {file.Name} и очищен от HTML-сущностей";
                 }
             }
         }
@@ -408,6 +439,9 @@ public class MainWindowViewModel : ViewModelBase, IDisposable
                     
                 var url = inputDialog.InputResult.Trim();
                 var response = await _httpClient.GetStringAsync(url);
+                
+                // Очищаем JSON от HTML-сущностей
+                response = CleanJsonFromHtmlEntities(response);
                     
                 JsonContent = response;
                     
@@ -416,7 +450,7 @@ public class MainWindowViewModel : ViewModelBase, IDisposable
                     _jsonEditor.Text = response;
                 }
                     
-                StatusMessage = $"JSON загружен с {url}";
+                StatusMessage = $"JSON загружен с {url} и очищен от HTML-сущностей";
             }
             catch (Exception ex)
             {
@@ -446,6 +480,34 @@ public class MainWindowViewModel : ViewModelBase, IDisposable
             
         if (_jsonEditor != null)
         {
+            // Получаем текст из буфера обмена
+            var clipboard = TopLevel.GetTopLevel(_jsonEditor)?
+                .Clipboard;
+                
+            if (clipboard != null) 
+            {
+                try {
+                    // Получаем текст из буфера обмена
+                    var clipboardText = await clipboard.GetTextAsync();
+                    
+                    // Очищаем от HTML-сущностей, если текст не пустой
+                    if (!string.IsNullOrEmpty(clipboardText)) {
+                        clipboardText = CleanJsonFromHtmlEntities(clipboardText);
+                        
+                        // Устанавливаем текст напрямую
+                        _jsonEditor.Text = clipboardText;
+                        JsonContent = clipboardText;
+                        StatusMessage = "JSON вставлен из буфера обмена и очищен от HTML-сущностей";
+                        return;
+                    }
+                }
+                catch (Exception ex) {
+                    // Если не удалось получить текст, используем стандартный метод вставки
+                    StatusMessage = $"Ошибка при обработке текста из буфера обмена: {ex.Message}";
+                }
+            }
+            
+            // Стандартный метод вставки (резервный вариант)
             _jsonEditor.PasteFromClipboard();
             // JsonContent будет обновлен через событие TextChanged
             StatusMessage = "JSON вставлен из буфера обмена";
@@ -610,26 +672,149 @@ public class MainWindowViewModel : ViewModelBase, IDisposable
     }
 
     /// <summary>
+    /// Очищает текст от HTML-сущностей
+    /// </summary>
+    private string CleanJsonFromHtmlEntities(string json)
+    {
+        if (string.IsNullOrEmpty(json))
+            return json;
+            
+        if (App.EnableDebugLogging)
+        {
+            Log.Debug("CleanJsonFromHtmlEntities начало, длина текста: {Length}", json.Length);
+            
+            // Подсчитываем количество HTML-сущностей в исходном тексте
+            int nbspCount = CountOccurrences(json, "&nbsp;");
+            int quotCount = CountOccurrences(json, "&quot;");
+            int ampCount = CountOccurrences(json, "&amp;");
+            int ltCount = CountOccurrences(json, "&lt;");
+            int gtCount = CountOccurrences(json, "&gt;");
+            int aposCount = CountOccurrences(json, "&apos;");
+            
+            Log.Debug("HTML-сущности в исходном тексте: " +
+                     "nbsp={NbspCount}, quot={QuotCount}, amp={AmpCount}, " +
+                     "lt={LtCount}, gt={GtCount}, apos={AposCount}",
+                     nbspCount, quotCount, ampCount, ltCount, gtCount, aposCount);
+            
+            // Логируем первые 100 символов для анализа
+            if (json.Length > 0)
+            {
+                string preview = json.Length > 100 ? json.Substring(0, 100) + "..." : json;
+                Log.Debug("Начало текста: {Preview}", preview);
+            }
+        }
+            
+        // Замена HTML-сущностей
+        var cleanedJson = json
+            .Replace("&nbsp;", " ")
+            .Replace("&quot;", "\"")
+            .Replace("&amp;", "&")
+            .Replace("&lt;", "<")
+            .Replace("&gt;", ">")
+            .Replace("&apos;", "'")
+            // Можно добавить другие HTML-сущности при необходимости
+            ;
+        
+        if (App.EnableDebugLogging && json != cleanedJson)
+        {
+            Log.Debug("Текст был очищен от HTML-сущностей, новая длина: {NewLength}", cleanedJson.Length);
+            
+            // Подсчитываем, сколько замен было сделано
+            int replacements = json.Length - cleanedJson.Length;
+            Log.Debug("Количество удаленных символов: {Replacements}", replacements);
+        }
+            
+        return cleanedJson;
+    }
+    
+    /// <summary>
+    /// Подсчитывает количество вхождений подстроки в строке
+    /// </summary>
+    private int CountOccurrences(string text, string pattern)
+    {
+        int count = 0;
+        int index = 0;
+        
+        while ((index = text.IndexOf(pattern, index, StringComparison.OrdinalIgnoreCase)) != -1)
+        {
+            count++;
+            index += pattern.Length;
+        }
+        
+        return count;
+    }
+
+    /// <summary>
     /// Загружает JSON из файла
     /// </summary>
     private void LoadJsonFromFile(string fileName)
     {
         try
         {
+            if (App.EnableDebugLogging)
+            {
+                Log.Debug("LoadJsonFromFile начало: {FileName}", fileName);
+            }
+            
+            if (string.IsNullOrEmpty(fileName))
+            {
+                StatusMessage = "Ошибка: имя файла пустое";
+                Log.Error("Ошибка: имя файла пустое");
+                return;
+            }
+            
+            if (!File.Exists(fileName))
+            {
+                StatusMessage = $"Ошибка: файл не существует: {fileName}";
+                Log.Error("Ошибка: файл не существует: {FileName}", fileName);
+                return;
+            }
+            
+            // Читаем содержимое файла
             var json = File.ReadAllText(fileName);
+            
+            if (App.EnableDebugLogging)
+            {
+                Log.Debug("Файл прочитан, длина: {Length} символов", json.Length);
+            }
+            
+            // Очищаем JSON от HTML-сущностей
+            json = CleanJsonFromHtmlEntities(json);
+            
+            if (App.EnableDebugLogging)
+            {
+                Log.Debug("JSON очищен от HTML-сущностей");
+            }
             
             // Устанавливаем текст в редактор
             if (_jsonEditor != null)
             {
                 _jsonEditor.Text = json;
                 JsonContent = json;
+                
+                if (App.EnableDebugLogging)
+                {
+                    Log.Debug("Текст установлен в редактор и JsonContent");
+                }
                 // IsJsonEmpty обновляется автоматически в сеттере JsonContent
+            }
+            else
+            {
+                Log.Error("Ошибка: _jsonEditor == null");
+                StatusMessage = "Ошибка: редактор JSON не инициализирован";
+                return;
             }
             
             StatusMessage = $"Файл загружен: {Path.GetFileName(fileName)}";
+            
+            if (App.EnableDebugLogging)
+            {
+                Log.Information("LoadJsonFromFile успешно завершен");
+            }
         }
         catch (Exception ex)
         {
+            Log.Error(ex, "Ошибка в LoadJsonFromFile");
             StatusMessage = $"Ошибка загрузки файла: {ex.Message}";
         }
     }
@@ -706,6 +891,122 @@ public class MainWindowViewModel : ViewModelBase, IDisposable
         }
         
         _httpClient?.Dispose();
+    }
+
+    /// <summary>
+    /// Обрабатывает перетаскивание файлов в приложение
+    /// </summary>
+    public void HandleDroppedFiles(IEnumerable<string> fileNames)
+    {
+        try
+        {
+            if (App.EnableDebugLogging)
+            {
+                Log.Debug("Starting HandleDroppedFiles");
+            }
+            
+            if (fileNames == null || !fileNames.Any())
+            {
+                StatusMessage = "Ошибка: список перетащенных файлов пуст.";
+                Log.Error("Ошибка: список перетащенных файлов пуст.");
+                return;
+            }
+            
+            // Выводим список всех файлов для отладки
+            if (App.EnableDebugLogging)
+            {
+                foreach (var file in fileNames)
+                {
+                    Log.Debug("Processing file: {FileName}", file);
+                }
+            }
+            
+            // Создаем список поддерживаемых файлов (.json и .txt) для обработки
+            var supportedFiles = fileNames
+                .Where(f => {
+                    try {
+                        var ext = Path.GetExtension(f)?.ToLowerInvariant() ?? "";
+                        if (App.EnableDebugLogging)
+                        {
+                            Log.Debug("File {FileName}, extension: '{Extension}'", f, ext);
+                        }
+                        return ext == ".json" || ext == ".txt";
+                    }
+                    catch (Exception ex) {
+                        Log.Error(ex, "Error getting extension for {FileName}", f);
+                        return false;
+                    }
+                })
+                .ToList();
+            
+            if (App.EnableDebugLogging)
+            {
+                Log.Debug("Found supported files: {Count}", supportedFiles.Count);
+            }
+                
+            if (supportedFiles.Count == 0)
+            {
+                var extensions = string.Join(", ", fileNames.Select(f => {
+                    try {
+                        return Path.GetExtension(f)?.ToLowerInvariant() ?? "unknown";
+                    }
+                    catch {
+                        return "error";
+                    }
+                }).Distinct());
+                
+                StatusMessage = $"Ошибка: нет поддерживаемых файлов среди перетащенных файлов. Поддерживаются только .json и .txt. Найденные расширения: {extensions}";
+                Log.Error("No supported files. Extensions: {Extensions}", extensions);
+                return;
+            }
+            
+            // Берем первый поддерживаемый файл
+            var selectedFile = supportedFiles[0];
+            var fileName = Path.GetFileName(selectedFile);
+            var fileExt = Path.GetExtension(selectedFile).ToLowerInvariant();
+            
+            StatusMessage = $"Загрузка файла: {fileName}...";
+            
+            if (App.EnableDebugLogging)
+            {
+                Log.Debug("Selected file for loading: {FileName}", selectedFile);
+            }
+            
+            try
+            {
+                LoadJsonFromFile(selectedFile);
+                
+                if (fileExt == ".txt")
+                {
+                    StatusMessage = $"Загружен текстовый файл: {fileName}. Проверьте правильность JSON.";
+                }
+                else if (supportedFiles.Count > 1)
+                {
+                    StatusMessage = $"Загружен файл: {fileName}. Остальные {supportedFiles.Count - 1} файлов проигнорированы.";
+                }
+                else
+                {
+                    StatusMessage = $"Файл JSON успешно загружен: {fileName}";
+                }
+                
+                if (App.EnableDebugLogging)
+                {
+                    Log.Information("File successfully loaded");
+                }
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"Ошибка при загрузке файла {fileName}: {ex.Message}";
+                Log.Error(ex, "Error loading file {FileName}", fileName);
+                Log.Error("Stack trace: {StackTrace}", ex.StackTrace);
+            }
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Ошибка при обработке перетащенных файлов: {ex.Message}";
+            Log.Error(ex, "General error in HandleDroppedFiles");
+            Log.Error("Stack trace: {StackTrace}", ex.StackTrace);
+        }
     }
 
     #endregion

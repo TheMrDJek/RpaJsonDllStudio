@@ -14,6 +14,8 @@
                         IsReadOnly="False"
                         VerticalScrollBarVisibility="Auto"
                         HorizontalScrollBarVisibility="Auto"
+                        Background="{StaticResource VsCodeBackgroundColor}"
+                        Foreground="{StaticResource VsCodeForegroundBrush}"
                         BorderThickness="0">
       <avalonia:TextEditor.Styles>
         <Style Selector="avalonia|TextEditor /template/ TextBlock#PART_LineNumber">

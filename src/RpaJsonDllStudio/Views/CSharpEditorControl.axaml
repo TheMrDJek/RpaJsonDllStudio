@@ -5,7 +5,7 @@
              xmlns:avalonia="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:Class="RpaJsonDllStudio.Views.CSharpEditorControl">
-  <Grid>
+  <Grid Background="Transparent">
     <avalonia:TextEditor Name="Editor"
                         FontFamily="{DynamicResource CodeEditorFontFamily}"
                         FontSize="14"
@@ -13,6 +13,8 @@
                         IsReadOnly="False"
                         VerticalScrollBarVisibility="Auto"
                         HorizontalScrollBarVisibility="Auto"
+                        Background="{StaticResource VsCodeBackgroundColor}"
+                        Foreground="{StaticResource VsCodeForegroundBrush}"
                         BorderThickness="0">
       <avalonia:TextEditor.Styles>
         <Style Selector="avalonia|TextEditor /template/ TextBlock#PART_LineNumber">
