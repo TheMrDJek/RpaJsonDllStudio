@@ -13,7 +13,6 @@ namespace RpaJsonDllStudio.Views;
 public partial class JsonEditorControl : UserControl
 {
     private TextEditor _editor;
-    private Border _dragDropArea;
         
     // Событие изменения текста
     public event EventHandler<string>? TextChanged;
@@ -23,7 +22,6 @@ public partial class JsonEditorControl : UserControl
         InitializeComponent();
             
         _editor = this.FindControl<TextEditor>("Editor");
-        _dragDropArea = this.FindControl<Border>("DragDropArea");
             
         try
         {

@@ -11,6 +11,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Emit;
 using System.Runtime.Serialization;
 using System.ComponentModel;
+using System.Text.RegularExpressions;
 
 namespace RpaJsonDllStudio.Services;
 
@@ -289,6 +290,30 @@ public class CodeGenerationService : ICodeGenerationService
     #region Private Methods
 
     /// <summary>
+    /// Очищает строку от HTML-сущностей и заменяет лишние пробелы символом подчеркивания
+    /// </summary>
+    private string CleanupPropertyName(string name)
+    {
+        if (string.IsNullOrEmpty(name))
+            return "EmptyProperty";
+            
+        // Заменяем HTML неразрывные пробелы на символ подчеркивания
+        string result = name.Replace("&nbsp;", "_");
+        
+        // Заменяем последовательности обычных пробелов на одиночный символ подчеркивания
+        result = Regex.Replace(result, @"\s+", "_");
+        
+        // Удаляем все недопустимые символы для имен C# (оставляем только буквы, цифры и подчеркивания)
+        result = Regex.Replace(result, @"[^\w]", "_");
+        
+        // Если имя начинается с цифры, добавляем префикс
+        if (char.IsDigit(result[0]))
+            result = "Prop_" + result;
+            
+        return result;
+    }
+
+    /// <summary>
     /// Генерирует классы C# на основе JSON структуры
     /// </summary>
     private void GenerateClassesFromToken(JToken token, string className, StringBuilder sb, CompilationSettings settings, int indentLevel = 1)
@@ -322,19 +347,15 @@ public class CodeGenerationService : ICodeGenerationService
             // Генерируем свойства
             foreach (var property in obj.Properties())
             {
-                string propertyName = property.Name;
-                if (settings.UsePascalCase)
+                // Очищаем имя свойства от HTML-сущностей и лишних пробелов
+                string originalPropertyName = property.Name;
+                string cleanPropertyName = CleanupPropertyName(originalPropertyName);
+                
+                string propertyName = cleanPropertyName;
+                if (settings.UsePascalCase && !string.IsNullOrEmpty(propertyName))
                 {
-                    // Проверка на пустое имя свойства перед преобразованием в PascalCase
-                    if (!string.IsNullOrEmpty(propertyName))
-                    {
-                        propertyName = char.ToUpper(propertyName[0]) + propertyName.Substring(1);
-                    }
-                    else
-                    {
-                        // Для пустых имен используем безопасное имя свойства
-                        propertyName = "EmptyProperty";
-                    }
+                    // Преобразуем первую букву в верхний регистр для PascalCase
+                    propertyName = char.ToUpper(propertyName[0]) + propertyName.Substring(1);
                 }
                     
                 var propertyValue = property.Value;
@@ -343,8 +364,6 @@ public class CodeGenerationService : ICodeGenerationService
                 // Добавляем атрибут JsonProperty, если нужно
                 if (settings.GenerateJsonPropertyAttributes)
                 {
-                    string originalPropertyName = string.IsNullOrEmpty(property.Name) ? "EmptyProperty" : property.Name;
-                    
                     if (settings.JsonLibrary == JsonLibrary.NewtonsoftJson)
                     {
                         sb.AppendLine($"{indent}    [JsonProperty(\"{originalPropertyName}\")]");

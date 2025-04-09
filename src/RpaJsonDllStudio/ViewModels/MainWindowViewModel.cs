@@ -23,7 +23,7 @@ public class MainWindowViewModel : ViewModelBase, IDisposable
         
     private string _jsonContent = "";
     private string _csharpContent = "";
-    private string _statusMessage = "Готов к работе";
+    private string _statusMessage = "Готов к работе.";
     private JsonEditorControl? _jsonEditor;
     private CSharpEditorControl? _csharpEditor;
     private bool _isJsonEmpty = true;
@@ -189,58 +189,6 @@ public class MainWindowViewModel : ViewModelBase, IDisposable
         
         // Инициализация редакторов
         InitializeEditors();
-    }
-
-    /// <summary>
-    /// Обрабатывает перетаскивание файлов в приложение
-    /// </summary>
-    public void HandleDroppedFiles(IEnumerable<string> fileNames)
-    {
-        if (fileNames == null || !fileNames.Any())
-        {
-            StatusMessage = "Ошибка: список перетащенных файлов пуст.";
-            return;
-        }
-        
-        // Создаем список поддерживаемых файлов (.json и .txt) для обработки
-        var supportedFiles = fileNames
-            .Where(f => {
-                var ext = Path.GetExtension(f).ToLowerInvariant();
-                return ext == ".json" || ext == ".txt";
-            })
-            .ToList();
-            
-        if (supportedFiles.Count == 0)
-        {
-            var extensions = string.Join(", ", fileNames.Select(f => Path.GetExtension(f).ToLowerInvariant()).Distinct());
-            StatusMessage = $"Ошибка: нет поддерживаемых файлов среди перетащенных файлов. Поддерживаются только .json и .txt. Найденные расширения: {extensions}";
-            return;
-        }
-        
-        // Берем первый поддерживаемый файл
-        var selectedFile = supportedFiles[0];
-        var fileName = Path.GetFileName(selectedFile);
-        var fileExt = Path.GetExtension(selectedFile).ToLowerInvariant();
-        
-        StatusMessage = $"Загрузка файла: {fileName}...";
-        
-        try
-        {
-            LoadJsonFromFile(selectedFile);
-            
-            if (fileExt == ".txt")
-            {
-                StatusMessage = $"Загружен текстовый файл: {fileName}. Проверьте правильность JSON.";
-            }
-            else if (supportedFiles.Count > 1)
-            {
-                StatusMessage = $"Загружен файл: {fileName}. Остальные {supportedFiles.Count - 1} файлов проигнорированы.";
-            }
-        }
-        catch (Exception ex)
-        {
-            StatusMessage = $"Ошибка при загрузке файла {fileName}: {ex.Message}";
-        }
     }
 
     #region Private Methods
