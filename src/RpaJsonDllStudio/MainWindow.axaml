@@ -3,7 +3,6 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="clr-namespace:RpaJsonDllStudio.ViewModels"
-        xmlns:conv="clr-namespace:RpaJsonDllStudio.Converters"
         mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="800"
         x:Class="RpaJsonDllStudio.MainWindow"
         x:DataType="vm:MainWindowViewModel"
@@ -12,15 +11,9 @@
         MinWidth="800" MinHeight="600"
         Width="1200" Height="800"
         WindowStartupLocation="CenterScreen"
-        Background="{StaticResource VsCodeBackgroundBrush}"
-        Foreground="{StaticResource VsCodeForegroundBrush}"
         FontFamily="{StaticResource UIFontFamily}"
         FontSize="{StaticResource UIFontSize}"
         DragDrop.AllowDrop="True">
-
-    <Window.Resources>
-        <conv:BoolToBrushConverter x:Key="BoolToBrushConverter" />
-    </Window.Resources>
 
     <Design.DataContext>
         <vm:MainWindowViewModel />
@@ -41,7 +34,6 @@
             <Setter Property="HorizontalAlignment" Value="Center" />
             <Setter Property="VerticalAlignment" Value="Center" />
             <Setter Property="Opacity" Value="0.5" />
-            <Setter Property="Foreground" Value="#6A4494" />
         </Style>
         
         <!-- Стиль для панели при перетаскивании файла -->
@@ -112,7 +104,6 @@
                        Margin="5"
                        BorderBrush="{StaticResource EditorBorderBrush}"
                        BorderThickness="1"
-                       Background="{StaticResource VsCodeBackgroundBrush}"
                        CornerRadius="3">
                     <!-- Панель содержит редактор и индикатор -->
                     <Panel>
@@ -179,14 +170,13 @@
                     <Border Margin="5,5,5,5" 
                             BorderBrush="{StaticResource EditorBorderBrush}" 
                             BorderThickness="1"
-                            Background="{StaticResource VsCodeBackgroundBrush}"
                             CornerRadius="3">
                         <Grid>
                             <ContentControl Content="{Binding CSharpEditor}"/>
                             
                             <!-- Индикатор для пустого редактора C# кода -->
                             <Panel IsVisible="{Binding IsCSharpEmpty}" HorizontalAlignment="Center" VerticalAlignment="Center">
-                                <TextBlock Classes="CodeIcon" Text="C#" Foreground="#C4C4C4" />
+                                <TextBlock Classes="CodeIcon" Text="C#" Foreground="#888888" />
                                 
                                 <TextBlock Text="Здесь будет сгенерированный C# код" 
                                            Foreground="#888888" 
@@ -210,15 +200,25 @@
 
         <!-- Status Bar -->
         <Grid Grid.Row="2" Background="{StaticResource VsCodeStatusBarBackgroundBrush}">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
             
-            <TextBlock Grid.Column="0" Margin="10,5" Text="{Binding StatusMessage}" Foreground="{StaticResource StatusBarForegroundBrush}" 
+            <!-- Разделительная линия над статусной панелью -->
+            <Border Grid.Row="0" Grid.ColumnSpan="2" 
+                    Height="1" 
+                    Background="{StaticResource StatusBarBorderBrush}" 
+                    VerticalAlignment="Top"/>
+            
+            <TextBlock Grid.Row="1" Grid.Column="0" Margin="10,5" Text="{Binding StatusMessage}" Foreground="{StaticResource ToolbarButtonTextBrush}" 
                        FontSize="{StaticResource UIFontSize}" VerticalAlignment="Center"/>
             
-            <StackPanel Grid.Column="1" Orientation="Horizontal">
+            <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal">
                 <Button Margin="5,3" Command="{Binding GenerateCSharpCommand}" Classes="toolbar">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="Генерировать код" VerticalAlignment="Center"/>

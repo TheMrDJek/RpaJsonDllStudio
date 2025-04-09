@@ -6,7 +6,7 @@
     <Color x:Key="PrimaryColor">#0969DA</Color>
     <Color x:Key="SecondaryColor">#005A9E</Color>
     <Color x:Key="AccentColor">#FF5722</Color>
-    <Color x:Key="BackgroundColor">#F9F9F9</Color>
+    <Color x:Key="BackgroundColor">#FFFFFF</Color>
     <Color x:Key="TextColor">#1E1E1E</Color>
     <Color x:Key="BorderColor">#CCCEDB</Color>
     
@@ -41,14 +41,18 @@
     <SolidColorBrush x:Key="SplitterBrush" Color="#E5E5E5" />
     <SolidColorBrush x:Key="HeadingForegroundBrush" Color="#24292F" />
     <SolidColorBrush x:Key="ErrorTextBrush" Color="#CF222E" />
+    <SolidColorBrush x:Key="ToolbarButtonTextBrush" Color="#3b3b3b" />
+    <SolidColorBrush x:Key="ToolbarButtonBrush" Color="#0258a8" />
+    <SolidColorBrush x:Key="ToolbarButtonForegroundBrush" Color="#ffffff" />
+    <SolidColorBrush x:Key="StatusBarBorderBrush" Color="#d4d4d4" />
     
     <!-- Цвета VS Code -->
     <Color x:Key="VsCodeBackgroundColor">#FFFFFF</Color>
     <Color x:Key="VsCodeForegroundColor">#1E1E1E</Color>
-    <Color x:Key="VsCodeEditorBackgroundColor">#FAFAFA</Color>
-    <Color x:Key="VsCodeEditorLineHighlightColor">#f5f5f5</Color>
-    <Color x:Key="VsCodeSidebarBackgroundColor">#F3F3F3</Color>
-    <Color x:Key="VsCodeStatusBarBackgroundColor">#007ACC</Color>
+    <Color x:Key="VsCodeEditorBackgroundColor">#FFFFFF</Color>
+    <Color x:Key="VsCodeEditorLineHighlightColor">#FFFFFF</Color>
+    <Color x:Key="VsCodeSidebarBackgroundColor">#FFFFFF</Color>
+    <Color x:Key="VsCodeStatusBarBackgroundColor">#f8f8f8</Color>
     
     <SolidColorBrush x:Key="VsCodeBackgroundBrush" Color="{StaticResource VsCodeBackgroundColor}"/>
     <SolidColorBrush x:Key="VsCodeForegroundBrush" Color="{StaticResource VsCodeForegroundColor}"/>

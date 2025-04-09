@@ -59,6 +59,16 @@
     <Style Selector="Button.toolbar">
         <Setter Property="Padding" Value="8 4" />
         <Setter Property="Margin" Value="4" />
+        <Setter Property="Background" Value="{StaticResource ToolbarButtonBrush}" />
+        <Setter Property="Foreground" Value="{StaticResource ToolbarButtonForegroundBrush}" />
+    </Style>
+    
+    <Style Selector="Button.toolbar:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="#0369c7" />
+    </Style>
+    
+    <Style Selector="Button.toolbar:pressed /template/ ContentPresenter">
+        <Setter Property="Background" Value="#014785" />
     </Style>
     
     <!-- Стили меню -->
