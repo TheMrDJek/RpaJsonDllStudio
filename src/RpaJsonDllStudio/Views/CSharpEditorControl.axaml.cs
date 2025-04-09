@@ -66,6 +66,22 @@ public partial class CSharpEditorControl : UserControl
         _editor.TextChanged += (s, e) => TextChanged?.Invoke(this, _editor.Text);
     }
         
+    /// <summary>
+    /// Вставляет текст из буфера обмена в редактор
+    /// </summary>
+    public void PasteFromClipboard()
+    {
+        _editor.Paste();
+    }
+    
+    /// <summary>
+    /// Копирует текст из редактора в буфер обмена
+    /// </summary>
+    public void CopyToClipboard()
+    {
+        _editor.Copy();
+    }
+        
     public string Text
     {
         get => _editor?.Text ?? string.Empty;

@@ -66,45 +66,22 @@ public partial class JsonEditorControl : UserControl
             
         // Подписываемся на событие изменения текста
         _editor.TextChanged += (s, e) => TextChanged?.Invoke(this, _editor.Text);
-        
-        // Разрешаем drag & drop для родительского элемента
-        // Сам TextEditor не поддерживает напрямую AllowDrop
-        this.AddHandler(DragDrop.DropEvent, EditorDrop);
-        this.AddHandler(DragDrop.DragOverEvent, EditorDragOver);
     }
     
-    private void EditorDragOver(object? sender, DragEventArgs e)
+    /// <summary>
+    /// Вставляет текст из буфера обмена в редактор
+    /// </summary>
+    public void PasteFromClipboard()
     {
-        // Показываем, что редактор принимает только JSON и TXT файлы
-        if (e.Data.Contains(DataFormats.FileNames))
-        {
-            var files = e.Data.GetFileNames();
-            var hasValidFiles = files != null && files.Any(f => 
-            {
-                var ext = System.IO.Path.GetExtension(f).ToLowerInvariant();
-                return ext == ".json" || ext == ".txt";
-            });
-            
-            if (hasValidFiles)
-            {
-                e.DragEffects = DragDropEffects.Copy;
-            }
-            else
-            {
-                e.DragEffects = DragDropEffects.None;
-            }
-        }
-        else 
-        {
-            e.DragEffects = DragDropEffects.None;
-        }
-        
-        // Не помечаем событие как обработанное, чтобы оно дошло до MainWindow
+        _editor.Paste();
     }
     
-    private void EditorDrop(object? sender, DragEventArgs e)
+    /// <summary>
+    /// Копирует текст из редактора в буфер обмена
+    /// </summary>
+    public void CopyToClipboard()
     {
-        // Не обрабатываем событие явно, чтобы оно дошло до MainWindow
+        _editor.Copy();
     }
         
     public string Text

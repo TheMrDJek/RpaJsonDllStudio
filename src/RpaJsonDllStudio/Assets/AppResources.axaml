@@ -45,7 +45,7 @@
     <!-- Цвета VS Code -->
     <Color x:Key="VsCodeBackgroundColor">#FFFFFF</Color>
     <Color x:Key="VsCodeForegroundColor">#1E1E1E</Color>
-    <Color x:Key="VsCodeEditorBackgroundColor">#FFFFFF</Color>
+    <Color x:Key="VsCodeEditorBackgroundColor">#FAFAFA</Color>
     <Color x:Key="VsCodeEditorLineHighlightColor">#f5f5f5</Color>
     <Color x:Key="VsCodeSidebarBackgroundColor">#F3F3F3</Color>
     <Color x:Key="VsCodeStatusBarBackgroundColor">#007ACC</Color>
