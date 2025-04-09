@@ -224,19 +224,19 @@ namespace RpaJsonModels
     {
         [JsonProperty("orderId")] public string OrderId { get; set; }
         [JsonProperty("total")] public double Total { get; set; }
-        [JsonProperty("customer")] public OrderCustomerClass Customer { get; set; }
-        [JsonProperty("items")] public OrderItemsClass[] Items { get; set; }
+        [JsonProperty("customer")] public Customer Customer { get; set; }
+        [JsonProperty("items")] public Item[] Items { get; set; }
         [JsonProperty("isProcessed")] public bool IsProcessed { get; set; }
     }
 
-    public class OrderCustomerClass
+    public class Customer
     {
         [JsonProperty("id")] public int Id { get; set; }
         [JsonProperty("name")] public string Name { get; set; }
         [JsonProperty("email")] public string Email { get; set; }
     }
 
-    public class OrderItemsClass
+    public class Item
     {
         [JsonProperty("productId")] public string ProductId { get; set; }
         [JsonProperty("quantity")] public int Quantity { get; set; }
