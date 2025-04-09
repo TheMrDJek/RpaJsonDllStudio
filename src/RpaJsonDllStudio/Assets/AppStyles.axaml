@@ -1,0 +1,83 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:avaloniaEdit="using:AvaloniaEdit">
+
+    <!-- Глобальные стили для VS Code подобного интерфейса -->
+    <Style Selector="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource UIFontFamily}" />
+        <Setter Property="FontSize" Value="{StaticResource UIFontSize}" />
+    </Style>
+    
+    <Style Selector="TextBox">
+        <Setter Property="FontFamily" Value="{StaticResource UIFontFamily}" />
+        <Setter Property="FontSize" Value="{StaticResource UIFontSize}" />
+        <Setter Property="Padding" Value="8 5" />
+        <Setter Property="CornerRadius" Value="3" />
+    </Style>
+    
+    <!-- Специальные стили для кодовых блоков -->
+    <Style Selector="TextBox.code">
+        <Setter Property="FontFamily" Value="{StaticResource CodeEditorFontFamily}" />
+        <Setter Property="FontSize" Value="{StaticResource CodeEditorFontSize}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="BorderBrush" Value="{StaticResource EditorBorderBrush}" />
+        <Setter Property="Background" Value="{StaticResource VsCodeEditorBackgroundBrush}" />
+        <Setter Property="Foreground" Value="{StaticResource VsCodeForegroundBrush}" />
+    </Style>
+    
+    <!-- Стили для текстового редактора AvaloniaEdit -->
+    <Style Selector="avaloniaEdit|TextEditor">
+        <Setter Property="FontFamily" Value="{StaticResource CodeEditorFontFamily}" />
+        <Setter Property="FontSize" Value="{StaticResource CodeEditorFontSize}" />
+        <Setter Property="Background" Value="{StaticResource VsCodeEditorBackgroundBrush}" />
+        <Setter Property="Foreground" Value="{StaticResource VsCodeForegroundBrush}" />
+        <Setter Property="LineNumbersForeground" Value="#6E7681" />
+        <Setter Property="ShowLineNumbers" Value="True" />
+    </Style>
+    
+    <!-- Стили кнопок -->
+    <Style Selector="Button">
+        <Setter Property="Padding" Value="10 5" />
+        <Setter Property="Background" Value="{DynamicResource StatusBarBackgroundBrush}" />
+        <Setter Property="Foreground" Value="White" />
+        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="FontSize" Value="{StaticResource UIFontSize}" />
+    </Style>
+    
+    <Style Selector="Button TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource UIFontFamily}" />
+    </Style>
+    
+    <Style Selector="Button:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="#2C73B3" />
+    </Style>
+    
+    <Style Selector="Button:pressed /template/ ContentPresenter">
+        <Setter Property="Background" Value="#0D4A77" />
+    </Style>
+    
+    <Style Selector="Button.toolbar">
+        <Setter Property="Padding" Value="8 4" />
+        <Setter Property="Margin" Value="4" />
+    </Style>
+    
+    <!-- Стили меню -->
+    <Style Selector="Menu">
+        <Setter Property="Background" Value="{StaticResource VsCodeBackgroundBrush}" />
+        <Setter Property="Foreground" Value="{StaticResource VsCodeForegroundBrush}" />
+        <Setter Property="FontFamily" Value="{StaticResource UIFontFamily}" />
+        <Setter Property="FontSize" Value="{StaticResource UIFontSize}" />
+    </Style>
+    
+    <Style Selector="MenuItem">
+        <Setter Property="FontFamily" Value="{StaticResource UIFontFamily}" />
+        <Setter Property="FontSize" Value="{StaticResource UIFontSize}" />
+    </Style>
+    
+    <!-- Стили заголовков -->
+    <Style Selector="TextBlock.header">
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Margin" Value="10,5" />
+        <Setter Property="Foreground" Value="{StaticResource VsCodeForegroundBrush}" />
+    </Style>
+</Styles> 

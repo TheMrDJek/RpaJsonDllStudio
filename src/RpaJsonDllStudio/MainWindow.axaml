@@ -2,20 +2,43 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:ae="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
         xmlns:vm="clr-namespace:RpaJsonDllStudio.ViewModels"
-        mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="600"
+        mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="800"
         x:Class="RpaJsonDllStudio.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Title="RpaJsonDllStudio - JSON to DLL Converter for RPA"
         Icon="/Assets/app-icon.ico"
-        MinWidth="800" MinHeight="450"
+        MinWidth="800" MinHeight="600"
+        Width="1200" Height="800"
         WindowStartupLocation="CenterScreen"
+        Background="{StaticResource VsCodeBackgroundBrush}"
+        Foreground="{StaticResource VsCodeForegroundBrush}"
+        FontFamily="{StaticResource UIFontFamily}"
+        FontSize="{StaticResource UIFontSize}"
         DragDrop.AllowDrop="True">
 
     <Design.DataContext>
         <vm:MainWindowViewModel />
     </Design.DataContext>
+
+    <Window.Styles>
+        <Style Selector="Image.DropFileIcon">
+            <Setter Property="Width" Value="80" />
+            <Setter Property="Height" Value="80" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Opacity" Value="0.7" />
+        </Style>
+        
+        <Style Selector="TextBlock.CodeIcon">
+            <Setter Property="FontSize" Value="64" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Opacity" Value="0.5" />
+            <Setter Property="Foreground" Value="#6A4494" />
+        </Style>
+    </Window.Styles>
 
     <Grid>
         <Grid.RowDefinitions>
@@ -25,12 +48,10 @@
         </Grid.RowDefinitions>
 
         <!-- Top Menu -->
-        <Menu Grid.Row="0">
+        <Menu Grid.Row="0" Background="{StaticResource VsCodeBackgroundBrush}" Foreground="{StaticResource VsCodeForegroundBrush}">
             <MenuItem Header="Файл">
                 <MenuItem Header="Открыть JSON..." Command="{Binding OpenJsonFileCommand}"/>
                 <MenuItem Header="Загрузить из URL..." Command="{Binding LoadFromUrlCommand}"/>
-                <MenuItem Header="Сохранить проект..." Command="{Binding SaveProjectCommand}"/>
-                <MenuItem Header="Загрузить проект..." Command="{Binding LoadProjectCommand}"/>
                 <Separator/>
                 <MenuItem Header="Выход" Command="{Binding ExitCommand}"/>
             </MenuItem>
@@ -42,6 +63,7 @@
             <MenuItem Header="Компиляция">
                 <MenuItem Header="Генерировать C# код" Command="{Binding GenerateCSharpCommand}"/>
                 <MenuItem Header="Компилировать DLL" Command="{Binding CompileDllCommand}"/>
+                <Separator/>
                 <MenuItem Header="Настройки компиляции..." Command="{Binding ShowSettingsCommand}"/>
             </MenuItem>
             <MenuItem Header="Помощь">
@@ -50,7 +72,7 @@
         </Menu>
 
         <!-- Main Content Area -->
-        <Grid Grid.Row="1">
+        <Grid Grid.Row="1" Background="{StaticResource VsCodeEditorBackgroundBrush}">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" MinWidth="200"/>
                 <ColumnDefinition Width="5"/>
@@ -64,47 +86,121 @@
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
                 
-                <TextBlock Grid.Row="0" Margin="5" FontWeight="Bold">JSON (перетащите файл сюда)</TextBlock>
+                <TextBlock Grid.Row="0" Classes="header">
+                    JSON (перетащите файл сюда)
+                </TextBlock>
                 
-                <Border Grid.Row="1" Margin="5" BorderBrush="LightGray" BorderThickness="1" CornerRadius="3">
-                    <ContentControl Content="{Binding JsonEditor}"/>
+                <Border Grid.Row="1" Margin="5" BorderBrush="{StaticResource EditorBorderBrush}" BorderThickness="1" CornerRadius="3"
+                       DragDrop.AllowDrop="True">
+                    <Grid DragDrop.AllowDrop="True">
+                        <ContentControl Content="{Binding JsonEditor}" DragDrop.AllowDrop="True"/>
+                        
+                        <!-- Изображение Drag & Drop, отображается только когда редактор пуст -->
+                        <Panel IsVisible="{Binding IsJsonEmpty}" HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <Image Classes="DropFileIcon" Source="/Assets/DropFileIcon.png" />
+                            
+                            <TextBlock Text="Перетащите файл JSON сюда" 
+                                       Foreground="#888888" 
+                                       FontSize="16" 
+                                       HorizontalAlignment="Center" 
+                                       VerticalAlignment="Center" 
+                                       Margin="0,140,0,0"/>
+                        </Panel>
+                    </Grid>
                 </Border>
             </Grid>
 
             <!-- Splitter -->
-            <GridSplitter Grid.Column="1" Background="#DDDDDD" HorizontalAlignment="Stretch"/>
+            <GridSplitter Grid.Column="1" Background="{StaticResource SplitterBrush}" HorizontalAlignment="Stretch"/>
 
             <!-- C# Code Panel -->
             <Grid Grid.Column="2">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto" MinHeight="50" MaxHeight="300"/>
                 </Grid.RowDefinitions>
                 
-                <TextBlock Grid.Row="0" Margin="5" FontWeight="Bold">Сгенерированный C# код</TextBlock>
+                <TextBlock Grid.Row="0" Classes="header">
+                    Сгенерированный C# код
+                </TextBlock>
                 
-                <Border Grid.Row="1" Margin="5" BorderBrush="LightGray" BorderThickness="1" CornerRadius="3">
-                    <ContentControl Content="{Binding CSharpEditor}"/>
+                <Border Grid.Row="1" Margin="5,5,5,0" BorderBrush="{StaticResource EditorBorderBrush}" BorderThickness="1" CornerRadius="3">
+                    <Grid>
+                        <ContentControl Content="{Binding CSharpEditor}"/>
+                        
+                        <!-- Индикатор для пустого редактора C# кода -->
+                        <Panel IsVisible="{Binding IsCSharpEmpty}" HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <TextBlock Classes="CodeIcon" Text="C#" Foreground="#AAAAAA" />
+                            
+                            <TextBlock Text="Здесь будет сгенерированный C# код" 
+                                       Foreground="#AAAAAA" 
+                                       FontSize="16" 
+                                       HorizontalAlignment="Center" 
+                                       VerticalAlignment="Center" 
+                                       Margin="0,140,0,0"/>
+                                       
+                            <TextBlock Text="Загрузите JSON и нажмите 'Генерировать код'" 
+                                       Foreground="#AAAAAA" 
+                                       FontSize="14" 
+                                       HorizontalAlignment="Center" 
+                                       VerticalAlignment="Center" 
+                                       Margin="0,170,0,0"/>
+                        </Panel>
+                    </Grid>
+                </Border>
+                
+                <!-- Разделитель для изменения размера панели ошибок -->
+                <GridSplitter Grid.Row="2" 
+                             IsVisible="{Binding !!CSharpErrors.Count}"
+                             Background="{StaticResource SplitterBrush}" 
+                             Height="5" 
+                             HorizontalAlignment="Stretch" 
+                             VerticalAlignment="Center"
+                             Margin="5,0,5,0"/>
+                
+                <!-- Панель с ошибками -->
+                <Border Grid.Row="3" Margin="5,0,5,5" 
+                        BorderBrush="{StaticResource EditorBorderBrush}" 
+                        BorderThickness="1" 
+                        CornerRadius="3"
+                        IsVisible="{Binding !!CSharpErrors.Count}">
+                    <Grid>
+                        <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+                            <ItemsControl ItemsSource="{Binding CSharpErrors}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding}"
+                                                   Foreground="{StaticResource ErrorTextBrush}"
+                                                   Margin="5,2"
+                                                   TextWrapping="Wrap"/>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </Grid>
                 </Border>
             </Grid>
         </Grid>
 
         <!-- Status Bar -->
-        <Grid Grid.Row="2" Background="#F0F0F0">
+        <Grid Grid.Row="2" Background="{StaticResource VsCodeStatusBarBackgroundBrush}">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
             
-            <TextBlock Grid.Column="0" Margin="5" Text="{Binding StatusMessage}"/>
+            <TextBlock Grid.Column="0" Margin="10,5" Text="{Binding StatusMessage}" Foreground="{StaticResource StatusBarForegroundBrush}" 
+                       FontSize="{StaticResource UIFontSize}" VerticalAlignment="Center"/>
             
             <StackPanel Grid.Column="1" Orientation="Horizontal">
-                <Button Margin="5" Command="{Binding GenerateCSharpCommand}">
+                <Button Margin="5,3" Command="{Binding GenerateCSharpCommand}" Classes="toolbar">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="Генерировать код" VerticalAlignment="Center"/>
                     </StackPanel>
                 </Button>
-                <Button Margin="5" Command="{Binding CompileDllCommand}">
+                <Button Margin="5,3" Command="{Binding CompileDllCommand}" Classes="toolbar">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="Компилировать DLL" VerticalAlignment="Center"/>
                     </StackPanel>

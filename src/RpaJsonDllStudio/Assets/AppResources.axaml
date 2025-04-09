@@ -3,12 +3,12 @@
                     xmlns:sys="clr-namespace:System;assembly=netstandard">
 
     <!-- Цвета -->
-    <Color x:Key="PrimaryColor">#0078D7</Color>
+    <Color x:Key="PrimaryColor">#0969DA</Color>
     <Color x:Key="SecondaryColor">#005A9E</Color>
     <Color x:Key="AccentColor">#FF5722</Color>
-    <Color x:Key="BackgroundColor">#F5F5F5</Color>
-    <Color x:Key="TextColor">#212121</Color>
-    <Color x:Key="BorderColor">#BDBDBD</Color>
+    <Color x:Key="BackgroundColor">#F9F9F9</Color>
+    <Color x:Key="TextColor">#1E1E1E</Color>
+    <Color x:Key="BorderColor">#CCCEDB</Color>
     
     <!-- Кисти -->
     <SolidColorBrush x:Key="PrimaryBrush" Color="{StaticResource PrimaryColor}"/>
@@ -19,13 +19,41 @@
     <SolidColorBrush x:Key="BorderBrush" Color="{StaticResource BorderColor}"/>
     
     <!-- Размеры -->
-    <sys:Double x:Key="FontSizeSmall">11</sys:Double>
-    <sys:Double x:Key="FontSizeNormal">13</sys:Double>
-    <sys:Double x:Key="FontSizeLarge">16</sys:Double>
-    <sys:Double x:Key="FontSizeHeading">20</sys:Double>
+    <sys:Double x:Key="FontSizeSmall">12</sys:Double>
+    <sys:Double x:Key="FontSizeNormal">14</sys:Double>
+    <sys:Double x:Key="FontSizeLarge">18</sys:Double>
+    <sys:Double x:Key="FontSizeHeading">22</sys:Double>
     
     <Thickness x:Key="DefaultMargin">10</Thickness>
     <Thickness x:Key="DefaultPadding">10</Thickness>
     <CornerRadius x:Key="DefaultCornerRadius">3</CornerRadius>
     
+    <!-- Шрифты VS Code -->
+    <FontFamily x:Key="CodeEditorFontFamily">Consolas, 'Cascadia Code', Monaco, 'DejaVu Sans Mono', 'Ubuntu Mono', monospace</FontFamily>
+    <FontFamily x:Key="UIFontFamily">Segoe UI, -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif</FontFamily>
+    <sys:Double x:Key="CodeEditorFontSize">14</sys:Double>
+    <sys:Double x:Key="UIFontSize">13</sys:Double>
+    
+    <!-- UI элементы -->
+    <SolidColorBrush x:Key="StatusBarBackgroundBrush" Color="#0969DA" />
+    <SolidColorBrush x:Key="StatusBarForegroundBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="EditorBorderBrush" Color="#D0D7DE" />
+    <SolidColorBrush x:Key="SplitterBrush" Color="#E5E5E5" />
+    <SolidColorBrush x:Key="HeadingForegroundBrush" Color="#24292F" />
+    <SolidColorBrush x:Key="ErrorTextBrush" Color="#CF222E" />
+    
+    <!-- Цвета VS Code -->
+    <Color x:Key="VsCodeBackgroundColor">#FFFFFF</Color>
+    <Color x:Key="VsCodeForegroundColor">#1E1E1E</Color>
+    <Color x:Key="VsCodeEditorBackgroundColor">#FFFFFF</Color>
+    <Color x:Key="VsCodeEditorLineHighlightColor">#f5f5f5</Color>
+    <Color x:Key="VsCodeSidebarBackgroundColor">#F3F3F3</Color>
+    <Color x:Key="VsCodeStatusBarBackgroundColor">#007ACC</Color>
+    
+    <SolidColorBrush x:Key="VsCodeBackgroundBrush" Color="{StaticResource VsCodeBackgroundColor}"/>
+    <SolidColorBrush x:Key="VsCodeForegroundBrush" Color="{StaticResource VsCodeForegroundColor}"/>
+    <SolidColorBrush x:Key="VsCodeEditorBackgroundBrush" Color="{StaticResource VsCodeEditorBackgroundColor}"/>
+    <SolidColorBrush x:Key="VsCodeEditorLineHighlightBrush" Color="{StaticResource VsCodeEditorLineHighlightColor}"/>
+    <SolidColorBrush x:Key="VsCodeSidebarBackgroundBrush" Color="{StaticResource VsCodeSidebarBackgroundColor}"/>
+    <SolidColorBrush x:Key="VsCodeStatusBarBackgroundBrush" Color="{StaticResource VsCodeStatusBarBackgroundColor}"/>
 </ResourceDictionary> 
