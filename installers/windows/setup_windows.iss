@@ -6,8 +6,8 @@
 
 #define MyAppName "RpaJsonDllStudio"
 #define MyAppVersion "1.0.0"
-#define MyAppPublisher "RpaJsonDllStudio Team"
-#define MyAppURL "https://github.com/yourusername/RpaJsonDllStudio"
+#define MyAppPublisher "Alexey Egorov"
+#define MyAppURL "https://github.com/themrdjek/RpaJsonDllStudio"
 #define MyAppExeName "RpaJsonDllStudio.exe"
 #define DotNetRuntimeVersion "9.0"
 #define DotNetRuntimeURL "https://dotnet.microsoft.com/download/dotnet/9.0"
