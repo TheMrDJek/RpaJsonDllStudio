@@ -280,7 +280,7 @@ foreach(var item in order.Items) {
 
 ### Интерфейс приложения
 
-![Интерфейс RpaJsonDllStudio](/common/interfaceMain.png)
+![Интерфейс RpaJsonDllStudio](common/interfaceMain.png)
 
 Интерфейс приложения оптимизирован для комфортной работы:
 - Окно имеет размер 1200×800 пикселей, что позволяет видеть весь JSON файл средней длины
@@ -292,7 +292,7 @@ foreach(var item in order.Items) {
 
 #### Успешная генерация C# кода
 
-![Корректный C# код](/common/intrfaceValid.png)
+![Корректный C# код](common/intrfaceValid.png)
 
 При успешной загрузке JSON и генерации кода:
 - Статусная строка показывает, что "C# код корректен"
@@ -302,7 +302,7 @@ foreach(var item in order.Items) {
 
 #### Обнаружение ошибок в коде
 
-![Ошибки в C# коде](/common/interfaceNotValid.png)
+![Ошибки в C# коде](common/interfaceNotValid.png)
 
 Приложение автоматически проверяет сгенерированный C# код:
 - При обнаружении ошибок показывается панель с детальным списком проблем
