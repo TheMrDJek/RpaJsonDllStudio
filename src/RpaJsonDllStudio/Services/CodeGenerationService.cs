@@ -37,6 +37,8 @@ public class CodeGenerationService : ICodeGenerationService
         {
             var rootObject = JToken.Parse(json);
             var sb = new StringBuilder();
+            var rootClassBuilder = new StringBuilder();
+            var otherClassesBuilder = new StringBuilder();
                 
             // Добавляем необходимые using директивы
             sb.AppendLine("using System;");
@@ -63,7 +65,12 @@ public class CodeGenerationService : ICodeGenerationService
             sb.AppendLine("{");
                 
             // Генерируем классы на основе JSON
-            GenerateClassesFromToken(rootObject, settings.RootClassName, sb, settings);
+            // Используем отдельные StringBuilder для Root и других классов
+            GenerateClassesFromToken(rootObject, settings.RootClassName, rootClassBuilder, otherClassesBuilder, settings);
+                
+            // Добавляем сначала Root класс, затем остальные классы
+            sb.Append(rootClassBuilder.ToString());
+            sb.Append(otherClassesBuilder.ToString());
                 
             // Закрываем namespace
             sb.AppendLine("}");
@@ -316,37 +323,45 @@ public class CodeGenerationService : ICodeGenerationService
     /// <summary>
     /// Генерирует классы C# на основе JSON структуры
     /// </summary>
-    private void GenerateClassesFromToken(JToken token, string className, StringBuilder sb, CompilationSettings settings, int indentLevel = 1)
+    private void GenerateClassesFromToken(JToken token, string className, StringBuilder rootSb, StringBuilder otherClassesSb, CompilationSettings settings, int indentLevel = 1)
     {
         // Генерация только поддерживаемых типов: объекты, массивы, примитивы
         if (token is JObject obj)
         {
+            // Удаляем префикс Root из имени класса, если он есть
+            string actualClassName = className;
+            if (className != settings.RootClassName && className.StartsWith(settings.RootClassName))
+            {
+                actualClassName = className.Substring(settings.RootClassName.Length);
+            }
+            
+            // Создаем StringBuilder для текущего класса
+            var currentClassSb = new StringBuilder();
+            
             // Генерируем класс для объекта
             string indent = new string(' ', indentLevel * 4);
                 
             // Добавляем XML документацию, если нужно
             if (settings.GenerateXmlDocumentation)
             {
-                sb.AppendLine($"{indent}/// <summary>");
-                sb.AppendLine($"{indent}/// Класс, представляющий {className}");
-                sb.AppendLine($"{indent}/// </summary>");
+                currentClassSb.AppendLine($"{indent}/// <summary>");
+                currentClassSb.AppendLine($"{indent}/// Класс, представляющий {actualClassName}");
+                currentClassSb.AppendLine($"{indent}/// </summary>");
             }
                 
-            sb.AppendLine($"{indent}public class {className}");
-            sb.AppendLine($"{indent}{{");
-                
-            // Генерируем конструктор по умолчанию, если нужно
-            if (settings.GenerateDefaultConstructor)
-            {
-                sb.AppendLine($"{indent}    public {className}()");
-                sb.AppendLine($"{indent}    {{");
-                sb.AppendLine($"{indent}    }}");
-                sb.AppendLine();
-            }
+            currentClassSb.AppendLine($"{indent}public class {actualClassName}");
+            currentClassSb.AppendLine($"{indent}{{");
+            
+            // Пропускаем генерацию конструкторов
                 
             // Генерируем свойства
+            int propertyCount = obj.Properties().Count();
+            int currentPropertyIndex = 0;
+            
             foreach (var property in obj.Properties())
             {
+                currentPropertyIndex++;
+                
                 // Очищаем имя свойства от HTML-сущностей и лишних пробелов
                 string originalPropertyName = property.Name;
                 string cleanPropertyName = CleanupPropertyName(originalPropertyName);
@@ -359,60 +374,99 @@ public class CodeGenerationService : ICodeGenerationService
                 }
                     
                 var propertyValue = property.Value;
-                string propertyType = GetCSharpType(propertyValue, $"{className}{propertyName}Class", settings);
+                
+                // Для массивов используем другое именование (без повторения имени родительского класса)
+                string childClassName;
+                if (propertyValue is JArray && propertyName.EndsWith("s"))
+                {
+                    // Если имя свойства заканчивается на 's', используем единственное число
+                    childClassName = propertyName.Substring(0, propertyName.Length - 1);
+                }
+                else
+                {
+                    childClassName = $"{actualClassName}{propertyName}";
+                }
+                
+                string propertyType = GetCSharpType(propertyValue, childClassName, settings);
                     
                 // Добавляем атрибут JsonProperty, если нужно
                 if (settings.GenerateJsonPropertyAttributes)
                 {
                     if (settings.JsonLibrary == JsonLibrary.NewtonsoftJson)
                     {
-                        sb.AppendLine($"{indent}    [JsonProperty(\"{originalPropertyName}\")]");
+                        currentClassSb.AppendLine($"{indent}    [JsonProperty(\"{originalPropertyName}\")]");
                     }
                     else if (settings.JsonLibrary == JsonLibrary.SystemTextJson)
                     {
-                        sb.AppendLine($"{indent}    [JsonPropertyName(\"{originalPropertyName}\")]");
+                        currentClassSb.AppendLine($"{indent}    [JsonPropertyName(\"{originalPropertyName}\")]");
                     }
                 }
                     
                 // Добавляем XML документацию для свойства, если нужно
                 if (settings.GenerateXmlDocumentation)
                 {
-                    sb.AppendLine($"{indent}    /// <summary>");
-                    sb.AppendLine($"{indent}    /// Свойство {propertyName}");
-                    sb.AppendLine($"{indent}    /// </summary>");
+                    currentClassSb.AppendLine($"{indent}    /// <summary>");
+                    currentClassSb.AppendLine($"{indent}    /// Свойство {propertyName}");
+                    currentClassSb.AppendLine($"{indent}    /// </summary>");
                 }
                     
                 // Генерируем свойство
                 if (settings.GenerateProperties)
                 {
-                    sb.AppendLine($"{indent}    public {propertyType} {propertyName} {{ get; set; }}");
+                    currentClassSb.AppendLine($"{indent}    public {propertyType} {propertyName} {{ get; set; }}");
                 }
                 else
                 {
-                    sb.AppendLine($"{indent}    public {propertyType} {propertyName};");
+                    currentClassSb.AppendLine($"{indent}    public {propertyType} {propertyName};");
+                }
+                
+                // Добавляем пустую строку между свойствами для лучшей читабельности
+                if (currentPropertyIndex < propertyCount)
+                {
+                    currentClassSb.AppendLine();
                 }
                     
                 // Если свойство - объект или массив объектов, генерируем соответствующий класс
                 if (propertyValue is JObject)
                 {
-                    sb.AppendLine();
-                    GenerateClassesFromToken(propertyValue, $"{className}{propertyName}Class", sb, settings, indentLevel + 1);
+                    GenerateClassesFromToken(propertyValue, childClassName, null, otherClassesSb, settings, indentLevel);
                 }
                 else if (propertyValue is JArray array && array.Count > 0 && array[0] is JObject)
                 {
-                    sb.AppendLine();
-                    GenerateClassesFromToken(array[0], $"{className}{propertyName}Class", sb, settings, indentLevel + 1);
+                    // Для массива объектов генерируем класс с именем элемента (без Item на конце)
+                    string itemClassName;
+                    // Если имя свойства заканчивается на 's', используем единственное число для типа
+                    if (propertyName.EndsWith("s"))
+                    {
+                        itemClassName = propertyName.Substring(0, propertyName.Length - 1);
+                    }
+                    else
+                    {
+                        itemClassName = $"{childClassName}Item";
+                    }
+                    GenerateClassesFromToken(array[0], itemClassName, null, otherClassesSb, settings, indentLevel);
                 }
             }
                 
-            sb.AppendLine($"{indent}}}");
+            currentClassSb.AppendLine($"{indent}}}");
+            
+            // Если это корневой класс, добавляем его в rootSb
+            if (className == settings.RootClassName)
+            {
+                rootSb.AppendLine(currentClassSb.ToString());
+            }
+            else
+            {
+                // Добавляем другие классы в otherClassesSb
+                otherClassesSb.AppendLine(currentClassSb.ToString());
+            }
         }
         else if (token is JArray array && array.Count > 0)
         {
             // Если массив содержит объекты, генерируем класс для первого элемента
             if (array[0] is JObject firstObject)
             {
-                GenerateClassesFromToken(firstObject, className, sb, settings, indentLevel);
+                GenerateClassesFromToken(firstObject, className, rootSb, otherClassesSb, settings, indentLevel);
             }
         }
     }
@@ -437,14 +491,34 @@ public class CodeGenerationService : ICodeGenerationService
             case JTokenType.Null:
                 return "object";
             case JTokenType.Object:
-                return className;
+                // Удаляем префикс Root из имени типа, если он есть
+                string actualClassName = className;
+                if (className != settings.RootClassName && className.StartsWith(settings.RootClassName))
+                {
+                    actualClassName = className.Substring(settings.RootClassName.Length);
+                }
+                return actualClassName;
             case JTokenType.Array:
                 var array = (JArray)token;
                 if (array.Count == 0)
                     return "object[]";
-                    
-                var elementType = GetCSharpType(array[0], $"{className}Item", settings);
-                return $"{elementType}[]";
+                
+                if (array[0] is JObject)
+                {
+                    // Удаляем префикс Root из имени типа элементов массива, если он есть
+                    string actualElementClassName = className;
+                    if (className != settings.RootClassName && className.StartsWith(settings.RootClassName))
+                    {
+                        actualElementClassName = className.Substring(settings.RootClassName.Length);
+                    }
+                    return $"{actualElementClassName}[]";
+                }
+                else
+                {
+                    var elementType = GetCSharpType(array[0], className, settings);
+                    return $"{elementType}[]";
+                }
+                
             default:
                 return "object";
         }
