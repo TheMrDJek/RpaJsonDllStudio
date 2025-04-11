@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 
 namespace RpaJsonDllStudio.Models;
 
@@ -16,7 +15,7 @@ public class CompilationSettings
     /// <summary>
     /// Используемая библиотека JSON
     /// </summary>
-    public JsonLibrary JsonLibrary { get; set; } = JsonLibrary.NewtonsoftJson;
+    public JsonLibrary JsonLibrary { get; set; } = JsonLibrary.SystemTextJson;
         
     /// <summary>
     /// Пространство имен для генерируемых классов
@@ -26,7 +25,7 @@ public class CompilationSettings
     /// <summary>
     /// Имя корневого класса
     /// </summary>
-    public string RootClassName { get; set; } = "Root";
+    public string RootClassName { get; init; } = "Root";
         
     /// <summary>
     /// Использовать PascalCase для названий свойств
@@ -41,7 +40,7 @@ public class CompilationSettings
     /// <summary>
     /// Генерировать конструктор по умолчанию
     /// </summary>
-    public bool GenerateDefaultConstructor { get; set; } = true;
+    public bool GenerateDefaultConstructor { get; set; }
         
     /// <summary>
     /// Генерировать аннотации JsonProperty
@@ -59,11 +58,6 @@ public class CompilationSettings
     public bool GenerateXmlDocumentation { get; set; }
         
     /// <summary>
-    /// Путь для сохранения DLL
-    /// </summary>
-    public string OutputPath { get; set; } = "";
-        
-    /// <summary>
     /// Строковое представление версии целевого фреймворка
     /// </summary>
     public string GetTargetFrameworkString()
@@ -75,34 +69,5 @@ public class CompilationSettings
             TargetFramework.NetFramework48 => "net48",
             _ => throw new ArgumentOutOfRangeException()
         };
-    }
-        
-    /// <summary>
-    /// Получить список ссылок на сборки, необходимые для компиляции
-    /// </summary>
-    public List<string> GetRequiredAssemblies()
-    {
-        var assemblies = new List<string>
-        {
-            "System.dll",
-            "System.Core.dll",
-            "System.Collections.dll",
-            "mscorlib.dll"
-        };
-
-        switch (JsonLibrary)
-        {
-            // Добавляем сборки в зависимости от выбранной библиотеки JSON
-            case JsonLibrary.NewtonsoftJson:
-                assemblies.Add("Newtonsoft.Json.dll");
-                break;
-            case JsonLibrary.SystemTextJson:
-                assemblies.Add("System.Text.Json.dll");
-                break;
-            default:
-                throw new ArgumentOutOfRangeException();
-        }
-            
-        return assemblies;
     }
 }

@@ -32,12 +32,5 @@ public interface ICodeGenerationService
     /// <param name="csharpCode">C# код для проверки</param>
     /// <param name="settings">Настройки компиляции</param>
     /// <returns>Результат проверки: пустой список если ошибок нет, или список ошибок компиляции</returns>
-    Task<List<string>> ValidateCSharpCodeAsync(string csharpCode, CompilationSettings settings);
-        
-    /// <summary>
-    /// Проверяет валидность JSON
-    /// </summary>
-    /// <param name="json">JSON строка для проверки</param>
-    /// <returns>True если JSON валиден, иначе False</returns>
-    bool IsValidJson(string json);
+    Task<string[]> ValidateCSharpCodeAsync(string csharpCode, CompilationSettings settings);
 }

@@ -22,13 +22,11 @@ public class SettingsViewModel : ViewModelBase
     private bool _generateJsonPropertyAttributes;
     private bool _optimizeOutput;
     private bool _generateXmlDocumentation;
-    private string _outputPath;
 
     public event EventHandler<bool>? CloseRequested;
 
     public ICommand SaveCommand { get; }
     public ICommand ResetToDefaultsCommand { get; }
-    public ICommand BrowseCommand { get; }
 
     public SettingsViewModel()
     {
@@ -57,12 +55,10 @@ public class SettingsViewModel : ViewModelBase
         _generateJsonPropertyAttributes = true;
         _optimizeOutput = true;
         _generateXmlDocumentation = false;
-        _outputPath = "";
 
         // Инициализация команд
         SaveCommand = new RelayCommand(_ => Save());
         ResetToDefaultsCommand = new RelayCommand(_ => ResetToDefaults());
-        BrowseCommand = new RelayCommand(_ => BrowseOutputPath());
     }
 
     public SettingsViewModel(CompilationSettings settings) : this()
@@ -78,7 +74,6 @@ public class SettingsViewModel : ViewModelBase
         _generateJsonPropertyAttributes = settings.GenerateJsonPropertyAttributes;
         _optimizeOutput = settings.OptimizeOutput;
         _generateXmlDocumentation = settings.GenerateXmlDocumentation;
-        _outputPath = settings.OutputPath;
     }
 
     public List<string> TargetFrameworks => _targetFrameworks;
@@ -145,12 +140,6 @@ public class SettingsViewModel : ViewModelBase
         set => SetProperty(ref _generateXmlDocumentation, value);
     }
 
-    public string OutputPath
-    {
-        get => _outputPath;
-        set => SetProperty(ref _outputPath, value);
-    }
-
     public CompilationSettings GetSettings()
     {
         return new CompilationSettings
@@ -164,8 +153,7 @@ public class SettingsViewModel : ViewModelBase
             GenerateDefaultConstructor = _generateDefaultConstructor,
             GenerateJsonPropertyAttributes = _generateJsonPropertyAttributes,
             OptimizeOutput = _optimizeOutput,
-            GenerateXmlDocumentation = _generateXmlDocumentation,
-            OutputPath = _outputPath
+            GenerateXmlDocumentation = _generateXmlDocumentation
         };
     }
 
@@ -199,34 +187,5 @@ public class SettingsViewModel : ViewModelBase
         GenerateJsonPropertyAttributes = true;
         OptimizeOutput = true;
         GenerateXmlDocumentation = false;
-        OutputPath = "";
-    }
-
-    private async void BrowseOutputPath()
-    {
-        var window = App.Current?.ApplicationLifetime as Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime;
-        var mainWindow = window?.MainWindow;
-            
-        if (mainWindow == null)
-            return;
-
-        var saveFileDialog = await mainWindow.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
-        {
-            Title = "Выберите путь сохранения DLL",
-            DefaultExtension = "dll",
-            SuggestedFileName = "RpaJsonModels.dll",
-            FileTypeChoices = new List<FilePickerFileType>
-            {
-                new FilePickerFileType("Dynamic Link Library (*.dll)")
-                {
-                    Patterns = new[] { "*.dll" }
-                }
-            }
-        });
-
-        if (saveFileDialog != null)
-        {
-            OutputPath = saveFileDialog.TryGetLocalPath() ?? "";
-        }
     }
 }

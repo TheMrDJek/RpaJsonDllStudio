@@ -149,7 +149,7 @@
                             BorderBrush="{StaticResource EditorBorderBrush}" 
                             BorderThickness="1" 
                             CornerRadius="3"
-                            IsVisible="{Binding !!CSharpErrors.Count}">
+                            IsVisible="{Binding !!CSharpErrors.Length}">
                         <Grid Height="100">
                             <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
                                 <ItemsControl ItemsSource="{Binding CSharpErrors}">

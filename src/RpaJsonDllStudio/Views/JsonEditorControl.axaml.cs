@@ -1,12 +1,12 @@
-using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Input;
 using AvaloniaEdit;
 using AvaloniaEdit.Highlighting;
 using AvaloniaEdit.Highlighting.Xshd;
+using Serilog;
 using System;
+using System.Reflection;
 using System.Xml;
-using System.Linq;
+using Avalonia.Media;
 
 namespace RpaJsonDllStudio.Views;
 
@@ -22,11 +22,19 @@ public partial class JsonEditorControl : UserControl
         InitializeComponent();
             
         _editor = this.FindControl<TextEditor>("Editor");
+        _editor.ShowLineNumbers = true;
+        _editor.Options.ShowTabs = true;
+        _editor.Options.EnableHyperlinks = false;
+        _editor.Options.EnableEmailHyperlinks = false;
+        _editor.Options.EnableRectangularSelection = true;
+        _editor.Options.ConvertTabsToSpaces = false;
+        _editor.WordWrap = true;
+        _editor.FontFamily = new FontFamily("Cascadia Code,Consolas,Menlo,Monospace");
             
+        // Загружаем схему подсветки синтаксиса
         try
         {
-            // Загружаем пользовательскую схему подсветки
-            using var stream = typeof(JsonEditorControl).Assembly
+            var stream = Assembly.GetExecutingAssembly()
                 .GetManifestResourceStream("RpaJsonDllStudio.Assets.JsonSyntaxHighlighting.xshd");
                 
             if (stream != null)
@@ -47,7 +55,7 @@ public partial class JsonEditorControl : UserControl
         catch (Exception ex)
         {
             // В случае ошибки просто продолжаем без подсветки синтаксиса
-            Console.WriteLine($"Ошибка при загрузке подсветки синтаксиса: {ex.Message}");
+            Log.Error(ex, "Ошибка при загрузке подсветки синтаксиса JSON");
             
             try
             {

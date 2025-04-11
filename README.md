@@ -201,21 +201,69 @@
 ### Исходный JSON
 ```json
 {
-  "orderId": "ABC-123",
-  "total": 299.99,
+  "invoiceNumber": "INV-2023-05-18",
+  "dateIssued": "2023-05-18T10:30:00Z",
+  "dueDate": "2023-06-18",
+  "totalAmount": 1250.75,
+  "currency": "RUB",
+  "status": "pending",
   "customer": {
-    "id": 42,
-    "name": "Иван Петров",
-    "email": "ivan@example.com"
+    "id": 1042,
+    "companyName": "ООО Технологии Будущего",
+    "contactPerson": {
+      "firstName": "Алексей",
+      "lastName": "Иванов",
+      "position": "Финансовый директор",
+      "email": "a.ivanov@future-tech.ru",
+      "phone": "+7 (495) 123-45-67"
+    },
+    "billingAddress": {
+      "street": "ул. Профсоюзная, 123",
+      "city": "Москва",
+      "postalCode": "117036",
+      "country": "Россия"
+    },
+    "vatNumber": "RU87654321",
+    "isVip": true
   },
   "items": [
     {
-      "productId": "SKU-001",
-      "quantity": 2,
-      "price": 149.99
+      "id": "PROD-001",
+      "description": "Лицензия на ПО RPA Enterprise",
+      "quantity": 3,
+      "unitPrice": 350.00,
+      "subtotal": 1050.00,
+      "taxRate": 20,
+      "taxAmount": 210.00
+    },
+    {
+      "id": "SERV-002",
+      "description": "Внедрение и настройка",
+      "quantity": 4,
+      "unitPrice": 50.00,
+      "subtotal": 200.00,
+      "taxRate": 0,
+      "taxAmount": 0
     }
   ],
-  "isProcessed": false
+  "paymentDetails": {
+    "method": "bankTransfer",
+    "bankAccount": {
+      "accountNumber": "40702810123450001234",
+      "bankName": "Сбербанк",
+      "swiftCode": "SABRRUMM"
+    },
+    "paymentDue": {
+      "amount": 1250.75,
+      "currency": "RUB"
+    }
+  },
+  "metadata": {
+    "createdBy": "system",
+    "department": "sales",
+    "tags": ["corporate", "software", "services"],
+    "notes": null
+  }
 }
 ```
 
@@ -223,62 +271,339 @@
 ```csharp
 namespace RpaJsonModels
 {
-    public class Order // Вместо стандартного "Root" можно задать более подходящее имя
+    public class Invoice // Задаем имя корневого класса вместо стандартного "Root"
     {
-        [JsonProperty("orderId")] public string OrderId { get; set; }
-        [JsonProperty("total")] public double Total { get; set; }
+        [JsonProperty("invoiceNumber")] public string InvoiceNumber { get; set; }
+        [JsonProperty("dateIssued")] public DateTime DateIssued { get; set; }
+        [JsonProperty("dueDate")] public string DueDate { get; set; }
+        [JsonProperty("totalAmount")] public double TotalAmount { get; set; }
+        [JsonProperty("currency")] public string Currency { get; set; }
+        [JsonProperty("status")] public string Status { get; set; }
         [JsonProperty("customer")] public Customer Customer { get; set; }
         [JsonProperty("items")] public Item[] Items { get; set; }
-        [JsonProperty("isProcessed")] public bool IsProcessed { get; set; }
+        [JsonProperty("paymentDetails")] public PaymentDetails PaymentDetails { get; set; }
+        [JsonProperty("metadata")] public Metadata Metadata { get; set; }
     }
 
     public class Customer
     {
         [JsonProperty("id")] public int Id { get; set; }
-        [JsonProperty("name")] public string Name { get; set; }
+        [JsonProperty("companyName")] public string CompanyName { get; set; }
+        [JsonProperty("contactPerson")] public ContactPerson ContactPerson { get; set; }
+        [JsonProperty("billingAddress")] public BillingAddress BillingAddress { get; set; }
+        [JsonProperty("vatNumber")] public string VatNumber { get; set; }
+        [JsonProperty("isVip")] public bool IsVip { get; set; }
+    }
+
+    public class ContactPerson
+    {
+        [JsonProperty("firstName")] public string FirstName { get; set; }
+        [JsonProperty("lastName")] public string LastName { get; set; }
+        [JsonProperty("position")] public string Position { get; set; }
         [JsonProperty("email")] public string Email { get; set; }
+        [JsonProperty("phone")] public string Phone { get; set; }
+    }
+
+    public class BillingAddress
+    {
+        [JsonProperty("street")] public string Street { get; set; }
+        [JsonProperty("city")] public string City { get; set; }
+        [JsonProperty("postalCode")] public string PostalCode { get; set; }
+        [JsonProperty("country")] public string Country { get; set; }
     }
 
     public class Item
     {
-        [JsonProperty("productId")] public string ProductId { get; set; }
+        [JsonProperty("id")] public string Id { get; set; }
+        [JsonProperty("description")] public string Description { get; set; }
         [JsonProperty("quantity")] public int Quantity { get; set; }
-        [JsonProperty("price")] public double Price { get; set; }
+        [JsonProperty("unitPrice")] public double UnitPrice { get; set; }
+        [JsonProperty("subtotal")] public double Subtotal { get; set; }
+        [JsonProperty("taxRate")] public int TaxRate { get; set; }
+        [JsonProperty("taxAmount")] public double TaxAmount { get; set; }
+    }
+
+    public class PaymentDetails
+    {
+        [JsonProperty("method")] public string Method { get; set; }
+        [JsonProperty("bankAccount")] public BankAccount BankAccount { get; set; }
+        [JsonProperty("paymentDue")] public PaymentDue PaymentDue { get; set; }
+    }
+
+    public class BankAccount
+    {
+        [JsonProperty("accountNumber")] public string AccountNumber { get; set; }
+        [JsonProperty("bankName")] public string BankName { get; set; }
+        [JsonProperty("swiftCode")] public string SwiftCode { get; set; }
+    }
+
+    public class PaymentDue
+    {
+        [JsonProperty("amount")] public double Amount { get; set; }
+        [JsonProperty("currency")] public string Currency { get; set; }
+    }
+
+    public class Metadata
+    {
+        [JsonProperty("createdBy")] public string CreatedBy { get; set; }
+        [JsonProperty("department")] public string Department { get; set; }
+        [JsonProperty("tags")] public string[] Tags { get; set; }
+        [JsonProperty("notes")] public object Notes { get; set; }
     }
 }
 ```
 
 ### Использование в RPA
 
-#### Обычный подход (без типизации)
+#### Чтение JSON в проектах RPA
+
+##### Нетипизированный подход (неудобный способ):
 ```csharp
-// UIPath пример с активностью "Парсинг JSON"
-var jsonString = File.ReadAllText("data.json");
-var jsonElement = JsonConvert.DeserializeObject<JObject>(jsonString);
+// Пример для UIPath, PIX RPA или Primo
+var jsonString = File.ReadAllText("invoice.json");
+var jsonObject = JsonConvert.DeserializeObject<JObject>(jsonString);
 
-// Сложный и неудобный доступ к данным
-var orderId = jsonElement["orderId"].ToString();
-var customerName = jsonElement["customer"]["name"].ToString();
-var firstItemPrice = jsonElement["items"][0]["price"].Value<double>();
+// Сложный и неудобный доступ к данным через строковые ключи
+var invoiceNumber = jsonObject["invoiceNumber"].ToString();
+var customerName = jsonObject["customer"]["companyName"].ToString();
+var contactEmail = jsonObject["customer"]["contactPerson"]["email"].ToString();
 
-// Невозможно увидеть полную структуру в отладчике
-// Нет автодополнения, высокий риск опечаток и ошибок
-```
+// Работа с массивами особенно сложна
+var items = jsonObject["items"] as JArray;
+decimal totalBeforeTax = 0;
 
-#### С использованием RpaJsonDllStudio
-```csharp
-// UIPath/PIX RPA/Primo пример с типизированными классами
-var jsonString = File.ReadAllText("data.json");
-var order = JsonConvert.DeserializeObject<RpaJsonModels.Order>(jsonString);
-
-// Типизированный доступ с автодополнением и проверкой на этапе компиляции
-Console.WriteLine($"Заказ: {order.OrderId}, Клиент: {order.Customer.Name}");
-foreach(var item in order.Items) {
-    Console.WriteLine($"Товар: {item.ProductId}, Кол-во: {item.Quantity}");
+// Приходится вручную обрабатывать каждый элемент
+foreach (var item in items)
+{
+    // Преобразования типов могут вызвать ошибки в рантайме
+    totalBeforeTax += item["subtotal"].Value<decimal>();
+    
+    // Доступ по индексу требует дополнительных проверок
+    if (item["description"] != null)
+    {
+        var description = item["description"].ToString();
+        // обработка...
+    }
 }
 
-// Полноценное отображение в отладчике
-// Безопасность типов, отсутствие ошибок преобразования
+// Отображение всей структуры в логах почти невозможно
+// Ошибки доступа к несуществующим свойствам обнаруживаются только при выполнении
+try 
+{
+    var nonExistentField = jsonObject["someField"]["nestedField"].ToString();
+} 
+catch (Exception ex) 
+{
+    // NullReferenceException в рантайме
+}
+```
+
+##### Типизированный подход с использованием RpaJsonDllStudio:
+```csharp
+// Пример для UIPath, PIX RPA или Primo
+var jsonString = File.ReadAllText("invoice.json");
+// Один вызов для получения полностью типизированного объекта
+var invoice = JsonConvert.DeserializeObject<RpaJsonModels.Invoice>(jsonString);
+
+// Прямой доступ к свойствам с проверкой типов
+string invoiceNumber = invoice.InvoiceNumber;
+string customerName = invoice.Customer.CompanyName;
+string contactEmail = invoice.Customer.ContactPerson.Email;
+
+// Удобная работа с коллекциями
+decimal totalBeforeTax = 0;
+foreach (var item in invoice.Items)
+{
+    // Типы данных уже приведены к нужным
+    totalBeforeTax += (decimal)item.Subtotal;
+    
+    // Автодополнение помогает найти нужные свойства
+    string description = item.Description;
+    
+    // Полноценная строгая типизация
+    if (item.TaxRate > 0)
+    {
+        // Работа с типизированными данными
+    }
+}
+
+// Вся структура доступна в логах и отладчике
+// Компилятор сразу обнаружит ошибки доступа к несуществующим свойствам
+// invoice.NonExistentProperty; // Ошибка на этапе компиляции, а не в рантайме
+```
+
+#### Создание и запись JSON в проектах RPA
+
+##### Нетипизированный подход (неудобный способ):
+```csharp
+// Создание сложного JSON объекта без типизации
+var invoice = new JObject();
+invoice["invoiceNumber"] = "INV-2023-05-19";
+invoice["dateIssued"] = DateTime.Now.ToString("o");
+invoice["dueDate"] = DateTime.Now.AddDays(30).ToString("yyyy-MM-dd");
+invoice["totalAmount"] = 2150.80;
+invoice["currency"] = "RUB";
+invoice["status"] = "draft";
+
+// Создание вложенных объектов
+var customer = new JObject();
+customer["id"] = 1043;
+customer["companyName"] = "АО Инновации";
+
+// Для каждого уровня вложенности приходится создавать отдельный объект
+var contactPerson = new JObject();
+contactPerson["firstName"] = "Мария";
+contactPerson["lastName"] = "Петрова";
+contactPerson["position"] = "Генеральный директор";
+contactPerson["email"] = "m.petrova@innovations.ru";
+contactPerson["phone"] = "+7 (495) 987-65-43";
+customer["contactPerson"] = contactPerson;
+
+// И так для каждого вложенного объекта
+var billingAddress = new JObject();
+billingAddress["street"] = "пр-т Ленина, 45";
+billingAddress["city"] = "Санкт-Петербург";
+billingAddress["postalCode"] = "190000";
+billingAddress["country"] = "Россия";
+customer["billingAddress"] = billingAddress;
+customer["vatNumber"] = "RU12345678";
+customer["isVip"] = true;
+invoice["customer"] = customer;
+
+// Создание массивов - отдельная сложность
+var items = new JArray();
+
+var item1 = new JObject();
+item1["id"] = "PROD-002";
+item1["description"] = "Лицензия на ПО RPA Professional";
+item1["quantity"] = 5;
+item1["unitPrice"] = 250.00;
+item1["subtotal"] = 1250.00;
+item1["taxRate"] = 20;
+item1["taxAmount"] = 250.00;
+items.Add(item1);
+
+var item2 = new JObject();
+item2["id"] = "SERV-003";
+item2["description"] = "Обучение персонала";
+item2["quantity"] = 10;
+item2["unitPrice"] = 65.00;
+item2["subtotal"] = 650.00;
+item2["taxRate"] = 0;
+item2["taxAmount"] = 0;
+items.Add(item2);
+
+invoice["items"] = items;
+
+// Добавление остальных сложных объектов
+// ... (код опущен для краткости) ...
+
+// Сериализация в строку и запись в файл
+var jsonString = invoice.ToString(Formatting.Indented);
+File.WriteAllText("new_invoice.json", jsonString);
+
+// Минусы:
+// - Большой объем кода, трудно поддерживать
+// - Высокая вероятность опечаток в именах свойств
+// - Нет автодополнения в среде RPA
+// - Необходимость ручного отслеживания структуры
+```
+
+##### Типизированный подход с использованием RpaJsonDllStudio:
+```csharp
+// Создание сложного JSON объекта с типизированными классами
+var invoice = new RpaJsonModels.Invoice
+{
+    InvoiceNumber = "INV-2023-05-19",
+    DateIssued = DateTime.Now,
+    DueDate = DateTime.Now.AddDays(30).ToString("yyyy-MM-dd"),
+    TotalAmount = 2150.80,
+    Currency = "RUB",
+    Status = "draft",
+    
+    // Структурированное создание вложенных объектов
+    Customer = new RpaJsonModels.Customer
+    {
+        Id = 1043,
+        CompanyName = "АО Инновации",
+        ContactPerson = new RpaJsonModels.ContactPerson
+        {
+            FirstName = "Мария",
+            LastName = "Петрова",
+            Position = "Генеральный директор",
+            Email = "m.petrova@innovations.ru",
+            Phone = "+7 (495) 987-65-43"
+        },
+        BillingAddress = new RpaJsonModels.BillingAddress
+        {
+            Street = "пр-т Ленина, 45",
+            City = "Санкт-Петербург",
+            PostalCode = "190000",
+            Country = "Россия"
+        },
+        VatNumber = "RU12345678",
+        IsVip = true
+    },
+    
+    // Простое создание массивов с типизированными элементами
+    Items = new[]
+    {
+        new RpaJsonModels.Item
+        {
+            Id = "PROD-002",
+            Description = "Лицензия на ПО RPA Professional",
+            Quantity = 5,
+            UnitPrice = 250.00,
+            Subtotal = 1250.00,
+            TaxRate = 20,
+            TaxAmount = 250.00
+        },
+        new RpaJsonModels.Item
+        {
+            Id = "SERV-003",
+            Description = "Обучение персонала",
+            Quantity = 10,
+            UnitPrice = 65.00,
+            Subtotal = 650.00,
+            TaxRate = 0,
+            TaxAmount = 0
+        }
+    },
+    
+    PaymentDetails = new RpaJsonModels.PaymentDetails
+    {
+        Method = "bankTransfer",
+        BankAccount = new RpaJsonModels.BankAccount
+        {
+            AccountNumber = "40702810123450001235",
+            BankName = "ВТБ",
+            SwiftCode = "VTBRRUMM"
+        },
+        PaymentDue = new RpaJsonModels.PaymentDue
+        {
+            Amount = 2150.80,
+            Currency = "RUB"
+        }
+    },
+    
+    Metadata = new RpaJsonModels.Metadata
+    {
+        CreatedBy = "robot",
+        Department = "sales",
+        Tags = new[] { "corporate", "training", "software" },
+        Notes = null
+    }
+};
+
+// Одна строка для сериализации в JSON
+var jsonString = JsonConvert.SerializeObject(invoice, Formatting.Indented);
+File.WriteAllText("new_invoice.json", jsonString);
+
+// Преимущества:
+// - Структурированный и компактный код
+// - Автодополнение свойств в среде RPA
+// - Проверка типов на этапе компиляции
+// - Гарантия соответствия структуры документа
 ```
 
 ### Интерфейс приложения

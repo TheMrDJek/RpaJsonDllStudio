@@ -232,7 +232,7 @@ public partial class MainWindow : Window
         }
     }
     
-    private void HandleFileList(System.Collections.Generic.List<string> files)
+    private void HandleFileList(List<string> files)
     {
         // Обрабатываем перетащенные файлы
         _viewModel.StatusMessage = "Файл перетащен. Обработка...";
