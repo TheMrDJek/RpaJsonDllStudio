@@ -1,136 +1,93 @@
 using RpaJsonDllStudio.Models;
+using Serilog;
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
 
-namespace RpaJsonDllStudio.Services
+namespace RpaJsonDllStudio.Services;
+
+/// <summary>
+/// Реализация сервиса для управления настройками сборки
+/// </summary>
+public class BuildSettingsService : IBuildSettingsService
 {
-    /// <summary>
-    /// Реализация сервиса для управления настройками сборки
-    /// </summary>
-    public class BuildSettingsService : IBuildSettingsService
+    private readonly string _settingsPath = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+        "RpaJsonDllStudio",
+        "build_settings.json");
+
+    private readonly JsonSerializerOptions _jsonSerializerOptions = new() { WriteIndented = true };
+
+    public BuildSettings CurrentSettings { get; private set; } = new();
+
+    public BuildSettingsService()
     {
-        private BuildSettings _currentSettings;
-        private readonly string _settingsPath;
-        
-        /// <inheritdoc/>
-        public BuildSettings CurrentSettings => _currentSettings;
-        
-        /// <inheritdoc/>
-        public event EventHandler<BuildSettings> SettingsChanged;
-        
-        /// <summary>
-        /// Конструктор сервиса
-        /// </summary>
-        public BuildSettingsService()
+        Directory.CreateDirectory(Path.GetDirectoryName(_settingsPath)!);
+    }
+
+    public async Task<BuildSettings> LoadSettingsAsync()
+    {
+        try
         {
-            _currentSettings = new BuildSettings();
-            
-            // Путь к файлу настроек в подпапке данных приложения
-            string appDataPath = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                "RpaJsonDllStudio"
-            );
-            
-            // Создаем директорию, если она не существует
-            if (!Directory.Exists(appDataPath))
+            if (File.Exists(_settingsPath))
             {
-                Directory.CreateDirectory(appDataPath);
-            }
-            
-            _settingsPath = Path.Combine(appDataPath, "build_settings.json");
-        }
-        
-        /// <inheritdoc/>
-        public async Task<BuildSettings> LoadSettingsAsync()
-        {
-            try
-            {
-                if (File.Exists(_settingsPath))
+                var json = await File.ReadAllTextAsync(_settingsPath);
+                var settings = JsonSerializer.Deserialize<BuildSettings>(json, _jsonSerializerOptions);
+
+                if (settings != null)
                 {
-                    string json = await File.ReadAllTextAsync(_settingsPath);
-                    var settings = JsonSerializer.Deserialize<BuildSettings>(json);
-                    
-                    if (settings != null)
-                    {
-                        _currentSettings = settings;
-                        settings.LastSaved = File.GetLastWriteTime(_settingsPath);
-                        SettingsChanged?.Invoke(this, _currentSettings);
-                    }
+                    CurrentSettings = settings;
+                    settings.LastSaved = File.GetLastWriteTime(_settingsPath);
                 }
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Ошибка при загрузке настроек: {ex.Message}");
-            }
-            
-            return _currentSettings;
         }
-        
-        /// <inheritdoc/>
-        public async Task<bool> SaveSettingsAsync(BuildSettings settings)
+        catch (Exception ex)
         {
-            try
-            {
-                string json = JsonSerializer.Serialize(settings, new JsonSerializerOptions
-                {
-                    WriteIndented = true
-                });
-                
-                await File.WriteAllTextAsync(_settingsPath, json);
-                
-                settings.LastSaved = DateTime.Now;
-                _currentSettings = settings;
-                SettingsChanged?.Invoke(this, _currentSettings);
-                
-                return true;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Ошибка при сохранении настроек: {ex.Message}");
-                return false;
-            }
+            Log.Error(ex, "Ошибка при загрузке настроек");
         }
-        
-        /// <inheritdoc/>
-        public void UpdateSettings(BuildSettings settings)
+
+        return CurrentSettings;
+    }
+
+    public async Task<bool> SaveSettingsAsync(BuildSettings settings)
+    {
+        try
         {
-            _currentSettings = settings.Clone();
-            SettingsChanged?.Invoke(this, _currentSettings);
+            var json = JsonSerializer.Serialize(settings, _jsonSerializerOptions);
+
+            await File.WriteAllTextAsync(_settingsPath, json);
+
+            settings.LastSaved = DateTime.Now;
+            CurrentSettings = settings;
+
+            return true;
         }
-        
-        /// <inheritdoc/>
-        public void AddReference(string referencePath)
+        catch (Exception ex)
         {
-            if (!string.IsNullOrWhiteSpace(referencePath) && 
-                !_currentSettings.References.Contains(referencePath))
-            {
-                _currentSettings.References.Add(referencePath);
-                SettingsChanged?.Invoke(this, _currentSettings);
-            }
-        }
-        
-        /// <inheritdoc/>
-        public void RemoveReference(string referencePath)
-        {
-            if (_currentSettings.References.Contains(referencePath))
-            {
-                _currentSettings.References.Remove(referencePath);
-                SettingsChanged?.Invoke(this, _currentSettings);
-            }
-        }
-        
-        /// <inheritdoc/>
-        public void SetDllPath(string dllPath)
-        {
-            if (_currentSettings.LastDllPath != dllPath)
-            {
-                _currentSettings.LastDllPath = dllPath;
-                SettingsChanged?.Invoke(this, _currentSettings);
-            }
+            Log.Error(ex, "Ошибка при сохранении настроек");
+            return false;
         }
     }
-} 
+
+    public void UpdateSettings(BuildSettings settings) => CurrentSettings = settings.Clone();
+
+    public void AddReference(string referencePath)
+    {
+        if (string.IsNullOrWhiteSpace(referencePath) == false &&
+            CurrentSettings.References.Contains(referencePath) == false)
+        {
+            CurrentSettings.References.Add(referencePath);
+        }
+    }
+
+    public void RemoveReference(string referencePath) => CurrentSettings.References.Remove(referencePath);
+
+    public void SetDllPath(string dllPath)
+    {
+        if (CurrentSettings.LastDllPath != dllPath)
+        {
+            CurrentSettings.LastDllPath = dllPath;
+        }
+    }
+}

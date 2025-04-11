@@ -1,4 +1,5 @@
 ﻿using Avalonia;
+using Serilog;
 using System;
 using System.Linq;
 
@@ -31,9 +32,9 @@ class Program
             isDevelopmentMode = true;
         }
         
+        // Вывод информации о режиме отладки только в режиме разработки
         if (isDevelopmentMode)
         {
-            // Кодировка для консоли уже установлена выше
             Console.WriteLine("===================================");
             Console.WriteLine("  РЕЖИМ ОТЛАДКИ ВКЛЮЧЕН");
             Console.WriteLine("  Логи будут выводиться с уровнем Debug");

@@ -29,8 +29,8 @@ public class MainWindowViewModel : ViewModelBase, IDisposable
     private CSharpEditorControl? _csharpEditor;
     private bool _isJsonEmpty = true;
     private bool _isCSharpEmpty = true;
-    private List<string> _csharpErrors = new List<string>();
-    private System.Timers.Timer? _validateCSharpTimer;
+    private string[] _csharpErrors = [];
+    private Timer? _validateCSharpTimer;
 
     #region Properties
 
@@ -130,7 +130,7 @@ public class MainWindowViewModel : ViewModelBase, IDisposable
     /// <summary>
     /// Список ошибок синтаксиса C# кода
     /// </summary>
-    public List<string> CSharpErrors
+    public string[] CSharpErrors
     {
         get => _csharpErrors;
         private set => SetProperty(ref _csharpErrors, value);
@@ -533,91 +533,83 @@ public class MainWindowViewModel : ViewModelBase, IDisposable
             
         try
         {
-            // Проверяем, задан ли путь для сохранения
-            if (string.IsNullOrWhiteSpace(_settings.OutputPath))
-            {
-                // Если нет, просим указать путь
-                var window = App.Current?.ApplicationLifetime as Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime;
-                var mainWindow = window?.MainWindow;
-                    
-                if (mainWindow == null)
-                    return;
+            // Запрашиваем путь для сохранения независимо от настроек
+            var window = App.Current?.ApplicationLifetime as Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime;
+            var mainWindow = window?.MainWindow;
+                
+            if (mainWindow == null)
+                return;
 
-                var file = await mainWindow.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+            var file = await mainWindow.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+            {
+                Title = "Сохранить DLL",
+                DefaultExtension = "dll",
+                SuggestedFileName = $"{_settings.Namespace}.dll",
+                FileTypeChoices = new[]
                 {
-                    Title = "Сохранить DLL",
-                    DefaultExtension = "dll",
-                    SuggestedFileName = $"{_settings.Namespace}.dll",
-                    FileTypeChoices = new[]
+                    new FilePickerFileType("Dynamic Link Library (*.dll)")
                     {
-                        new FilePickerFileType("Dynamic Link Library (*.dll)")
+                        Patterns = new[] { "*.dll" }
+                    }
+                }
+            });
+
+            if (file != null)
+            {
+                var outputPath = file.TryGetLocalPath();
+                if (outputPath != null)
+                {
+                    StatusMessage = "Компиляция DLL...";
+                    
+                    try
+                    {
+                        // Компилируем код в DLL
+                        var result = await _codeGenerationService.CompileToDllAsync(CSharpContent, outputPath, _settings);
+                        
+                        if (result != null)
                         {
-                            Patterns = new[] { "*.dll" }
+                            StatusMessage = $"DLL успешно скомпилирована: {result}";
+                        }
+                        else
+                        {
+                            StatusMessage = "Ошибка компиляции DLL";
                         }
                     }
-                });
-
-                if (file != null)
-                {
-                    var path = file.TryGetLocalPath();
-                    if (path != null)
+                    catch (Exception ex)
                     {
-                        _settings.OutputPath = path;
-                    }
-                    else
-                    {
-                        StatusMessage = "Ошибка: Невозможно получить локальный путь";
-                        return;
+                        // Отображаем детальную информацию об ошибке
+                        var errors = new List<string>();
+                        
+                        // Добавляем основное сообщение об ошибке
+                        errors.Add(ex.Message);
+                        
+                        // Проверяем наличие вложенного исключения
+                        if (ex.InnerException != null)
+                        {
+                            errors.Add("Подробности:");
+                            errors.Add(ex.InnerException.Message);
+                        }
+                        
+                        // Добавляем стек вызовов для отладки
+                        if (!string.IsNullOrEmpty(ex.StackTrace))
+                        {
+                            errors.Add("Стек вызовов:");
+                            errors.Add(ex.StackTrace);
+                        }
+                        
+                        await ShowErrorsDialogAsync("Ошибка компиляции DLL", errors);
+                        StatusMessage = "Ошибка компиляции DLL. Подробности в диалоговом окне.";
                     }
                 }
                 else
                 {
-                    // Пользователь отменил выбор файла
-                    StatusMessage = "Компиляция отменена";
-                    return;
+                    StatusMessage = "Ошибка: Невозможно получить локальный путь";
                 }
             }
-                
-            StatusMessage = "Компиляция DLL...";
-                
-            try
+            else
             {
-                // Компилируем код в DLL
-                var result = await _codeGenerationService.CompileToDllAsync(CSharpContent, _settings.OutputPath, _settings);
-                
-                if (result != null)
-                {
-                    StatusMessage = $"DLL успешно скомпилирована: {result}";
-                }
-                else
-                {
-                    StatusMessage = "Ошибка компиляции DLL";
-                }
-            }
-            catch (Exception ex)
-            {
-                // Отображаем детальную информацию об ошибке
-                var errors = new List<string>();
-                
-                // Добавляем основное сообщение об ошибке
-                errors.Add(ex.Message);
-                
-                // Проверяем наличие вложенного исключения
-                if (ex.InnerException != null)
-                {
-                    errors.Add("Подробности:");
-                    errors.Add(ex.InnerException.Message);
-                }
-                
-                // Добавляем стек вызовов для отладки
-                if (!string.IsNullOrEmpty(ex.StackTrace))
-                {
-                    errors.Add("Стек вызовов:");
-                    errors.Add(ex.StackTrace);
-                }
-                
-                await ShowErrorsDialogAsync("Ошибка компиляции DLL", errors);
-                StatusMessage = "Ошибка компиляции DLL. Подробности в диалоговом окне.";
+                // Пользователь отменил выбор файла
+                StatusMessage = "Компиляция отменена";
             }
         }
         catch (Exception ex)
@@ -650,7 +642,6 @@ public class MainWindowViewModel : ViewModelBase, IDisposable
             _settings.GenerateJsonPropertyAttributes = settings.GenerateJsonPropertyAttributes;
             _settings.OptimizeOutput = settings.OptimizeOutput;
             _settings.GenerateXmlDocumentation = settings.GenerateXmlDocumentation;
-            _settings.OutputPath = settings.OutputPath;
                 
             // Если JSON не пустой, генерируем код с новыми настройками
             if (!string.IsNullOrWhiteSpace(JsonContent))
@@ -839,7 +830,7 @@ public class MainWindowViewModel : ViewModelBase, IDisposable
     {
         if (string.IsNullOrWhiteSpace(CSharpContent))
         {
-            CSharpErrors = new List<string>();
+            CSharpErrors = [];
             return;
         }
             
@@ -849,9 +840,9 @@ public class MainWindowViewModel : ViewModelBase, IDisposable
             var errors = await _codeGenerationService.ValidateCSharpCodeAsync(CSharpContent, _settings);
             CSharpErrors = errors;
                 
-            if (errors.Count > 0)
+            if (errors.Length > 0)
             {
-                StatusMessage = $"Найдено {errors.Count} ошибок в C# коде";
+                StatusMessage = $"Найдено {errors.Length} ошибок в C# коде";
             }
             else if (!string.IsNullOrWhiteSpace(CSharpContent))
             {

@@ -5,6 +5,7 @@ using Avalonia.Markup.Xaml;
 using Microsoft.Extensions.DependencyInjection;
 using RpaJsonDllStudio.Models;
 using RpaJsonDllStudio.Services;
+using RpaJsonDllStudio.Services.CodeGeneration;
 using Serilog;
 using Serilog.Events;
 using System;
@@ -55,7 +56,7 @@ public class App : Application
         // Добавляем специальный обогащающий свойствами, чтобы легче отлаживать события перетаскивания
         logConfig.Enrich.WithProperty("ApplicationVersion", "1.0.0");
         
-        // Настраиваем вывод в консоль и файл
+        // Настраиваем вывод в консоль только в режиме отладки
         if (EnableDebugLogging)
         {
             // В режиме отладки выводим в консоль все сообщения
@@ -64,16 +65,8 @@ public class App : Application
                 outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}"
             );
         }
-        else
-        {
-            // В режиме Release выводим в консоль только ошибки и критические проблемы
-            logConfig.WriteTo.Console(
-                restrictedToMinimumLevel: LogEventLevel.Error,
-                outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}"
-            );
-        }
         
-        // Настраиваем вывод в файл 
+        // Настраиваем вывод в файл (независимо от режима работы)
         logConfig.WriteTo.File(
             path: logFilePath,
             rollingInterval: RollingInterval.Day,
@@ -139,7 +132,11 @@ public class App : Application
     {
         var services = new ServiceCollection();
         
-        // Регистрируем сервисы
+        // Регистрируем вспомогательные классы
+        services.AddSingleton<CodeGenerator>();
+        services.AddSingleton<CodeCompiler>();
+        
+        // Регистрируем основные сервисы
         services.AddSingleton<ICodeGenerationService, CodeGenerationService>();
         services.AddSingleton<CompilationSettings>();
         services.AddSingleton<IBuildSettingsService, BuildSettingsService>();
